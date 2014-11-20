@@ -1,1 +1,1 @@
-Service open-source library for implementing plane pyramid for Simagis Live project.
+Open-source mini-SDK for implementing plane pyramid for Simagis Live project.

@@ -8,6 +8,30 @@
     <artifactId>simagis-plane-pyramid-sdk</artifactId>
     <version>1.0</version>
 
+    <name>Simagis Live Plane Pyramid SDK</name>
+    <description>Open-source mini-SDK for implementing plane pyramid for Simagis Live project.</description>
+
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>http://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Daniel Alievsky</name>
+            <email>daniel@iskrael.org</email>
+            <organization>AlgART laboratory</organization>
+            <organizationUrl>http://algart.net</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/simagis/simagis-plane-pyramid-sdk.git</connection>
+        <url>http://github.com/juven/git-demo</url>
+    </scm>
+
     <dependencies>
         <dependency>
             <groupId>net.algart</groupId>
