@@ -29,7 +29,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/simagis/simagis-plane-pyramid-sdk.git</connection>
-        <url>http://github.com/juven/git-demo</url>
+        <url>https://github.com/simagis/simagis-plane-pyramid-sdk.git</url>
     </scm>
 
     <dependencies>
