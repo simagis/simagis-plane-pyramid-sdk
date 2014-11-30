@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid;
+package com.simagis.pyramid.minimal;
 
+import com.simagis.pyramid.PlanePyramidSource;
 import net.algart.arrays.*;
 import net.algart.math.functions.Func;
 import net.algart.math.functions.LinearOperator;

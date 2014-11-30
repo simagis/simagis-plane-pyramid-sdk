@@ -24,6 +24,7 @@
 
 package com.simagis.pyramid;
 
+import com.simagis.pyramid.minimal.RotatingPlanePyramidSource;
 import net.algart.arrays.*;
 import net.algart.arrays.Arrays;
 import net.algart.math.IPoint;
