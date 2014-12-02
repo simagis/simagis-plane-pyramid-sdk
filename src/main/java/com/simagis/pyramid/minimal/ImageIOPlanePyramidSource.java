@@ -55,8 +55,6 @@ public final class ImageIOPlanePyramidSource extends AbstractPlanePyramidSourceW
     private static final int MIN_PYRAMID_LEVEL_SIDE = Arrays.SystemSettings.getIntProperty(
         "com.simagis.pyramid.minimal.ImageIOPlanePyramidSource.minPyramidLevelSide", 512);
 
-    public static final int DEBUG_LEVEL = 1;
-
     private final DefaultPlanePyramidSource parent;
 
     public static class ImageIOReadingBehaviour implements Cloneable {
