@@ -24,6 +24,7 @@
 
 package com.simagis.live.json.minimal;
 
+import com.simagis.pyramid.AbstractPlanePyramidSource;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -180,6 +181,24 @@ public class SimagisLiveUtils {
             throw new IOException("Illegal configuration string", e);
         }
     }
+
+    public static void standardCustomizePlanePyramidSourceRendering(
+        AbstractPlanePyramidSource source,
+        String renderingConfiguration)
+        throws IOException
+    {
+        standardCustomizePlanePyramidSourceRendering(source, configurationStringToJson(renderingConfiguration));
+    }
+
+    public static void standardCustomizePlanePyramidSourceRendering(
+        AbstractPlanePyramidSource source,
+        JSONObject renderingJson)
+    {
+        final JSONObject coarseData = openObject(renderingJson, "coarseData");
+        source.setSkipCoarseData(coarseData.optBoolean("skip"));
+        source.setSkippingFiller(coarseData.optDouble("filler", 0.0));
+    }
+
 
     public static Set<String> getKeySet(JSONObject jsonObject) {
         if (jsonObject == null) {
