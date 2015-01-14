@@ -78,8 +78,8 @@ public interface PlanePyramidSource {
         LABEL_ONLY_IMAGE,
 
         /**
-         * The thumbnail: something like {@link #MAP_IMAGE}, but containing the same information as a ordinary
-         * pyramid (while {@link #MAP_IMAGE} can contain other coarse data). Usually generated automatically
+         * The thumbnail: something like {@link #MAP_IMAGE}, but containing the same information as a regular
+         * pyramid (while {@link #MAP_IMAGE} may contain other coarse data). Usually generated automatically
          * by scanner software and looks like last available levels.
          *
          * <p>If the format does not provide such an image, it is built automatically as the last available level
