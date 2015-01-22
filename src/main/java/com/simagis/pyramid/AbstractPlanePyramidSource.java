@@ -541,32 +541,6 @@ public abstract class AbstractPlanePyramidSource
         return result;
     }
 
-    protected Matrix<? extends PArray> rotateLabelImage(final Matrix<? extends PArray> label) {
-        if (labelRotation == RotatingPlanePyramidSource.RotationMode.NONE) {
-            return label;
-        }
-        final Matrix<? extends PArray> rotated = labelRotation.asRotated(label);
-        long newWidth = rotated.dim(DIM_WIDTH);
-        long newHeight = rotated.dim(DIM_HEIGHT);
-        if (newWidth > label.dim(DIM_WIDTH)) {
-            newHeight *= (double) label.dim(DIM_WIDTH) / newWidth;
-            newWidth = label.dim(DIM_WIDTH);
-        }
-        if (newHeight > label.dim(DIM_HEIGHT)) {
-            newWidth *= (double) label.dim(DIM_HEIGHT) / newHeight;
-            newHeight = label.dim(DIM_HEIGHT);
-        }
-        assert newWidth <= label.dim(DIM_WIDTH);
-        assert newHeight <= label.dim(DIM_HEIGHT);
-        final Matrix<UpdatablePArray> result = Arrays.SMM.newMatrix(UpdatablePArray.class, label);
-        PlanePyramidTools.fillMatrix(result, labelRotationBackground);
-        final Matrix<UpdatablePArray> centralArea = result.subMatr(
-            0, (result.dim(DIM_WIDTH) - newWidth) / 2, (result.dim(DIM_HEIGHT) - newHeight) / 2,
-            result.dim(0), newWidth, newHeight);
-        Matrices.resize(null, Matrices.ResizingMethod.POLYLINEAR_AVERAGING, centralArea, rotated);
-        return result;
-    }
-
     protected final Matrix<UpdatablePArray> newResultMatrix(long dimX, long dimY) {
         Matrix<UpdatablePArray> result = memoryModel().newMatrix(
             Arrays.SystemSettings.maxTempJavaMemory(),
@@ -691,6 +665,32 @@ public abstract class AbstractPlanePyramidSource
             );
         }
         return m;
+    }
+
+    private Matrix<? extends PArray> rotateLabelImage(final Matrix<? extends PArray> label) {
+        if (labelRotation == RotatingPlanePyramidSource.RotationMode.NONE) {
+            return label;
+        }
+        final Matrix<? extends PArray> rotated = labelRotation.asRotated(label);
+        long newWidth = rotated.dim(DIM_WIDTH);
+        long newHeight = rotated.dim(DIM_HEIGHT);
+        if (newWidth > label.dim(DIM_WIDTH)) {
+            newHeight *= (double) label.dim(DIM_WIDTH) / newWidth;
+            newWidth = label.dim(DIM_WIDTH);
+        }
+        if (newHeight > label.dim(DIM_HEIGHT)) {
+            newWidth *= (double) label.dim(DIM_HEIGHT) / newHeight;
+            newHeight = label.dim(DIM_HEIGHT);
+        }
+        assert newWidth <= label.dim(DIM_WIDTH);
+        assert newHeight <= label.dim(DIM_HEIGHT);
+        final Matrix<UpdatablePArray> result = Arrays.SMM.newMatrix(UpdatablePArray.class, label);
+        PlanePyramidTools.fillMatrix(result, labelRotationBackground);
+        final Matrix<UpdatablePArray> centralArea = result.subMatr(
+            0, (result.dim(DIM_WIDTH) - newWidth) / 2, (result.dim(DIM_HEIGHT) - newHeight) / 2,
+            result.dim(0), newWidth, newHeight);
+        Matrices.resize(null, Matrices.ResizingMethod.POLYLINEAR_AVERAGING, centralArea, rotated);
+        return result;
     }
 
     protected final class WholeSlideScaler {
