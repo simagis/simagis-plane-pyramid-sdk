@@ -70,6 +70,8 @@ public class ZipExtractor {
             parentDir.mkdirs();
         }
         extractFile(jarFile, entryName, resultFile);
-        System.out.println(entryName + " successfully extracted from " + jarFile + " to " + resultFile);
+        System.out.println(entryName + " successfully extracted from "
+            + jarFile.getAbsolutePath() + " to "
+            + resultFile.getAbsolutePath());
     }
 }
