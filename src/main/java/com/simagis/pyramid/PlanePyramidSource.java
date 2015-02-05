@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Daniel Alievsky, AlgART Laboratory (http://algart.net)
+ * Copyright (c) 2014-2015 Daniel Alievsky, AlgART Laboratory (http://algart.net)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,10 @@
 package com.simagis.pyramid;
 
 import net.algart.arrays.Arrays;
+import net.algart.arrays.Matrices;
 import net.algart.arrays.Matrix;
 import net.algart.arrays.PArray;
+import net.algart.math.functions.Func;
 
 import java.nio.channels.NotYetConnectedException;
 import java.util.NoSuchElementException;
@@ -43,6 +45,7 @@ public interface PlanePyramidSource {
     public static final int DEBUG_LEVEL = Math.max(
         Arrays.SystemSettings.getIntProperty("com.simagis.pyramid.debugLevel", 1),
         Arrays.SystemSettings.getIntEnv("COM_SIMAGIS_PYRAMID_DEBUGLEVEL", 1));
+    public static final long DEFAULT_MINIMAL_PYRAMID_SIZE = 8;
 
     public static enum SpecialImageKind {
         /**
@@ -147,6 +150,80 @@ public interface PlanePyramidSource {
         public abstract boolean dataMustBeFlushed();
 
         public abstract boolean forcePhysicalWriting();
+    }
+
+    public static enum AveragingMode {
+        /**
+         * For binary data means simple, for other types means averaging.
+         * Note that in a case of BIT_TO_BYTE the source data are already converted to bytes (if a pyramid
+         * contains more than 1 level).
+         * Recommended for algorithmic needs.
+         */
+        DEFAULT,
+        /**
+         * For binary data means conversion to bytes + averaging, for other types means averaging.
+         * Recommended for viewers.
+         */
+        AVERAGING,
+        /**
+         * Step decimation. Never averages pixels.
+         */
+        SIMPLE,
+        /**
+         * Like {@link #MIN}, but affects binary data only (for other types performs averaging).
+         */
+        AND,
+        /**
+         * Like {@link #MAX}, but affects binary data only (for other types performs averaging).
+         */
+        OR,
+        MIN,
+        MAX;
+
+        public Matrices.ResizingMethod averagingMethod(Matrix<?> matrix) {
+            switch (this) {
+                case AND:
+                    if (matrix.elementType() != boolean.class) {
+                        break;
+                    }
+                    // else equivalent to the following MIN
+                case MIN:
+                    return AveragingMode.AVERAGING_MIN;
+                case OR:
+                    if (matrix.elementType() != boolean.class) {
+                        break;
+                    }
+                    // else equivalent to the following MAX
+                case MAX:
+                    return AveragingMode.AVERAGING_MAX;
+                case DEFAULT:
+                case AVERAGING:
+                    if (matrix.elementType() != boolean.class) {
+                        break;
+                    } else {
+                        return Matrices.ResizingMethod.SIMPLE;
+                    }
+                case SIMPLE:
+                    return Matrices.ResizingMethod.SIMPLE;
+            }
+            return Matrices.ResizingMethod.POLYLINEAR_AVERAGING;
+        }
+
+        private static final Matrices.ResizingMethod.Averaging AVERAGING_MIN =
+            new Matrices.ResizingMethod.Averaging(Matrices.InterpolationMethod.STEP_FUNCTION) {
+                @Override
+                protected Func getAveragingFunc(long[] apertureDim) {
+                    return Func.MIN;
+                }
+            };
+
+        private static final Matrices.ResizingMethod.Averaging AVERAGING_MAX =
+            new Matrices.ResizingMethod.Averaging(Matrices.InterpolationMethod.STEP_FUNCTION) {
+                @Override
+                protected Func getAveragingFunc(long[] apertureDim) {
+                    return Func.MAX;
+                }
+            };
     }
 
     public int numberOfResolutions();

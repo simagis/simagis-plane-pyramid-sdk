@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Daniel Alievsky, AlgART Laboratory (http://algart.net)
+ * Copyright (c) 2014-2015 Daniel Alievsky, AlgART Laboratory (http://algart.net)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 package com.simagis.pyramid;
 
-import com.simagis.pyramid.minimal.RotatingPlanePyramidSource;
+import com.simagis.pyramid.sources.RotatingPlanePyramidSource;
 import net.algart.arrays.*;
 import net.algart.arrays.Arrays;
 import net.algart.math.IPoint;

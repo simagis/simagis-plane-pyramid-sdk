@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Daniel Alievsky, AlgART Laboratory (http://algart.net)
+ * Copyright (c) 2014-2015 Daniel Alievsky, AlgART Laboratory (http://algart.net)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid.minimal;
+package com.simagis.pyramid.sources;
 
 import com.simagis.pyramid.AbstractPlanePyramidSourceWrapper;
 import com.simagis.pyramid.PlanePyramidSource;
@@ -51,9 +51,9 @@ import java.util.List;
 public final class ImageIOPlanePyramidSource extends AbstractPlanePyramidSourceWrapper implements PlanePyramidSource {
     private static final String CACHE_READY_MARKER_FILE = ".ready";
     private static final int COMPRESSION = Math.max(2, Arrays.SystemSettings.getIntProperty(
-        "com.simagis.pyramid.minimal.ImageIOPlanePyramidSource.compression", 2));
+        "com.simagis.pyramid.sources.ImageIOPlanePyramidSource.compression", 2));
     private static final int MIN_PYRAMID_LEVEL_SIDE = Arrays.SystemSettings.getIntProperty(
-        "com.simagis.pyramid.minimal.ImageIOPlanePyramidSource.minPyramidLevelSide", 512);
+        "com.simagis.pyramid.sources.ImageIOPlanePyramidSource.minPyramidLevelSide", 512);
 
     private final DefaultPlanePyramidSource parent;
 
