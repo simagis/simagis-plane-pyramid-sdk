@@ -76,7 +76,7 @@
     <distributionManagement>
         <repository>
             <id>simagis-open-releases</id>
-            <url>http://simagis.artifactoryonline.com/simagis/open-releases-local</url>
+            <url>https://simagis.artifactoryonline.com/simagis/open-releases-local</url>
         </repository>
     </distributionManagement>
  </project>
