@@ -7,7 +7,7 @@ import net.algart.contexts.*;
 import net.algart.external.ImageConversions;
 import com.simagis.images.color.SimpleColorImageFormatter;
 import com.simagis.pyramid.standard.PlanePyramid;
-import com.simagis.pyramid.PlanePyramidSource;
+import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.arrays.*;
 import net.algart.external.ExternalAlgorithmCaller;
 import net.algart.external.MatrixToBufferedImageConverter;

@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid.builders;
+package net.algart.simagis.pyramid.builders;
 
-import com.simagis.pyramid.PlanePyramidSource;
-import com.simagis.pyramid.PlanePyramidTools;
+import net.algart.simagis.pyramid.PlanePyramidSource;
+import net.algart.simagis.pyramid.PlanePyramidTools;
 import net.algart.arrays.*;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import java.util.List;
 
 public abstract class FollowingResolutionsBuilder {
     public static final long RECOMMENDED_TILE_DIM_FOR_MAKING_FOLLOWING_RESOLUTIONS = Math.max(16,
-        Arrays.SystemSettings.getLongProperty("com.simagis.pyramid.builders.tileForMakingFollowingResolutions",
+        Arrays.SystemSettings.getLongProperty("net.algart.simagis.pyramid.builders.tileForMakingFollowingResolutions",
             PlanePyramidSource.DEFAULT_TILE_DIM)
     );
     protected final PlanePyramidSource source;

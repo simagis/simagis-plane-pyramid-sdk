@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid.sources;
+package net.algart.simagis.pyramid.sources;
 
-import com.simagis.pyramid.PlanePyramidSource;
-import com.simagis.pyramid.PlanePyramidTools;
+import net.algart.simagis.pyramid.PlanePyramidSource;
+import net.algart.simagis.pyramid.PlanePyramidTools;
 import net.algart.arrays.*;
 
 import java.nio.channels.NotYetConnectedException;

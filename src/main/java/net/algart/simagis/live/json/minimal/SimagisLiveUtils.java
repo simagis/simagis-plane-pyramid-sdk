@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package com.simagis.live.json.minimal;
+package net.algart.simagis.live.json.minimal;
 
-import com.simagis.pyramid.AbstractPlanePyramidSource;
+import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

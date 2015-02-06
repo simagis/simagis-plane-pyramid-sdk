@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid;
+package net.algart.simagis.pyramid;
 
 import net.algart.arrays.Arrays;
 import net.algart.arrays.Matrices;
@@ -39,12 +39,12 @@ public interface PlanePyramidSource {
     public static final int DIM_HEIGHT = 2;
 
     public static final int DEFAULT_COMPRESSION = Math.max(2,
-        Arrays.SystemSettings.getIntProperty("com.simagis.pyramid.defaultPyramidCompression", 4));
+        Arrays.SystemSettings.getIntProperty("net.algart.simagis.pyramid.defaultPyramidCompression", 4));
     public static final long DEFAULT_TILE_DIM = Math.max(16,
-        Arrays.SystemSettings.getLongProperty("com.simagis.pyramid.tile", 1024));
+        Arrays.SystemSettings.getLongProperty("net.algart.simagis.pyramid.tile", 1024));
     public static final int DEBUG_LEVEL = Math.max(
-        Arrays.SystemSettings.getIntProperty("com.simagis.pyramid.debugLevel", 1),
-        Arrays.SystemSettings.getIntEnv("COM_SIMAGIS_PYRAMID_DEBUGLEVEL", 1));
+        Arrays.SystemSettings.getIntProperty("net.algart.simagis.pyramid.debugLevel", 1),
+        Arrays.SystemSettings.getIntEnv("NET_ALGART_SIMAGIS_PYRAMID_DEBUGLEVEL", 1));
     public static final long DEFAULT_MINIMAL_PYRAMID_SIZE = 8;
 
     public static enum SpecialImageKind {
@@ -248,7 +248,7 @@ public interface PlanePyramidSource {
      * Returns <tt>true</tt> if {@link #elementType()} method works properly.
      * In other case, that method throws <tt>UnsupportedOperationException</tt>.
      * In particular, returns <tt>true</tt> in <tt>com.simagis.pyramid.standard.PlanePyramid</tt>
-     * and <tt>com.simagis.pyramid.standard.DefaultPlanePyramidSource</tt>.
+     * and <tt>net.algart.simagis.pyramid.standard.DefaultPlanePyramidSource</tt>.
      *
      * @return whether {@link #elementType()} is supported.
      */

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid;
+package net.algart.simagis.pyramid;
 
 import java.io.IOException;
 

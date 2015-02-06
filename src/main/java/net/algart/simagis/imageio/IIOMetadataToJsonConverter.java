@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.simagis.imageio;
+package net.algart.simagis.imageio;
 
 import org.json.JSONArray;
 import org.json.JSONException;

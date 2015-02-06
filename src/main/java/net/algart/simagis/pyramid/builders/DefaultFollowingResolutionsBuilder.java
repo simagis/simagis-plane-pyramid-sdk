@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid.builders;
+package net.algart.simagis.pyramid.builders;
 
-import com.simagis.pyramid.PlanePyramidSource;
+import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.arrays.*;
 
 import java.util.ArrayList;

@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid;
+package net.algart.simagis.pyramid;
 
-import com.simagis.pyramid.sources.RotatingPlanePyramidSource;
+import net.algart.simagis.pyramid.sources.RotatingPlanePyramidSource;
 import net.algart.arrays.*;
 import net.algart.arrays.Arrays;
 import net.algart.math.IPoint;
@@ -45,12 +45,12 @@ public abstract class AbstractPlanePyramidSource
     implements PlanePyramidSource, ArrayProcessorWithContextSwitching
 {
     private static final int MAX_NON_TILED_READING_DIM = Math.max(16, Arrays.SystemSettings.getIntProperty(
-        "com.simagis.pyramid.maxNonTiledReadingDim", 4096));
+        "net.algart.simagis.pyramid.maxNonTiledReadingDim", 4096));
     // 64 MB for packed int ARGB
     private static final int READING_TILE_DIM = (int) Math.min(16384, Arrays.SystemSettings.getLongProperty(
-        "com.simagis.pyramid.readingTile", 2 * DEFAULT_TILE_DIM));
+        "net.algart.simagis.pyramid.readingTile", 2 * DEFAULT_TILE_DIM));
     private static final long TILE_CACHING_MEMORY = Math.max(16, Arrays.SystemSettings.getLongProperty(
-        "com.simagis.pyramid.tileCachingMemory", 67108864));
+        "net.algart.simagis.pyramid.tileCachingMemory", 67108864));
     // 64 MB (+1 possible additional tile)
 
     public static enum TileDirection {
@@ -384,7 +384,7 @@ public abstract class AbstractPlanePyramidSource
      * by the size of 1 tile).
      *
      * <p>The initial value is retrieved from the system property
-     * "<tt>com.simagis.pyramid.maxNonTiledReadingDim</tt>",
+     * "<tt>net.algart.simagis.pyramid.maxNonTiledReadingDim</tt>",
      * if it exists and contains a valid integer number.
      * If there is no such property, or if it contains not a number,
      * or if some exception occurred while calling <tt>Long.getLong</tt>,
@@ -453,7 +453,7 @@ public abstract class AbstractPlanePyramidSource
      * and for splitting large submatrix for reading into smaller tiles, read by {@link #readLittleSubMatrix}.
      *
      * <p>The default implementation retrieves the value from the system property
-     * "<tt>com.simagis.pyramid.tileCachingMemory</tt>",
+     * "<tt>net.algart.simagis.pyramid.tileCachingMemory</tt>",
      * if it exists and contains a valid integer number.
      * If there is no such property, or if it contains not a number,
      * or if some exception occurred while calling <tt>Long.getLong</tt>,

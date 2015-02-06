@@ -22,11 +22,11 @@
  * SOFTWARE.
  */
 
-package com.simagis.pyramid.sources;
+package net.algart.simagis.pyramid.sources;
 
-import com.simagis.pyramid.AbstractPlanePyramidSourceWrapper;
-import com.simagis.pyramid.PlanePyramidSource;
-import com.simagis.pyramid.PlanePyramidTools;
+import net.algart.simagis.pyramid.AbstractPlanePyramidSourceWrapper;
+import net.algart.simagis.pyramid.PlanePyramidSource;
+import net.algart.simagis.pyramid.PlanePyramidTools;
 import net.algart.arrays.*;
 import net.algart.contexts.Context;
 import net.algart.contexts.DefaultArrayContext;
@@ -51,9 +51,9 @@ import java.util.List;
 public final class ImageIOPlanePyramidSource extends AbstractPlanePyramidSourceWrapper implements PlanePyramidSource {
     private static final String CACHE_READY_MARKER_FILE = ".ready";
     private static final int COMPRESSION = Math.max(2, Arrays.SystemSettings.getIntProperty(
-        "com.simagis.pyramid.sources.ImageIOPlanePyramidSource.compression", 2));
+        "net.algart.simagis.pyramid.sources.ImageIOPlanePyramidSource.compression", 2));
     private static final int MIN_PYRAMID_LEVEL_SIDE = Arrays.SystemSettings.getIntProperty(
-        "com.simagis.pyramid.sources.ImageIOPlanePyramidSource.minPyramidLevelSide", 512);
+        "net.algart.simagis.pyramid.sources.ImageIOPlanePyramidSource.minPyramidLevelSide", 512);
 
     private final DefaultPlanePyramidSource parent;
 

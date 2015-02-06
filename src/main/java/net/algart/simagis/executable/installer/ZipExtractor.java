@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.simagis.executable.installer;
+package net.algart.simagis.executable.installer;
 
 import java.io.*;
 import java.util.zip.ZipEntry;
