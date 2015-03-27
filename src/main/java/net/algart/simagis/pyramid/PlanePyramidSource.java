@@ -105,6 +105,32 @@ public interface PlanePyramidSource {
          * of the full image, returned by {@link PlanePyramidSource#readFullMatrix(int resolutionLevel)}.
          */
         CUSTOM_KIND_2,
+
+        /**
+         * Some format-specific special image.
+         *
+         * <p>If the format does not provide such an image, it is built automatically as the last available level
+         * of the full image, returned by {@link PlanePyramidSource#readFullMatrix(int resolutionLevel)}.
+         */
+        CUSTOM_KIND_3,
+
+        /**
+         * Some format-specific special image.
+         *
+         * <p>If the format does not provide such an image, it is built automatically as the last available level
+         * of the full image, returned by {@link PlanePyramidSource#readFullMatrix(int resolutionLevel)}.
+         */
+
+        CUSTOM_KIND_4,
+        /**
+         * Some format-specific special image.
+         *
+         * <p>If the format does not provide such an image, it is built automatically as the last available level
+         * of the full image, returned by {@link PlanePyramidSource#readFullMatrix(int resolutionLevel)}.
+         */
+
+        CUSTOM_KIND_5,
+
         /**
          * Impossible image kind, that should never returned for correct special images, but can be returned
          * by some methods to indicate special situation (for example, when it is not a special image).
