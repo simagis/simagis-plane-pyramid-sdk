@@ -39,26 +39,35 @@ public final class RotatingPlanePyramidSource
     private static final int DEBUG_LEVEL = 1;
 
     public static enum RotationMode {
-        NONE(1, 0, 0, 0, false),
+        NONE(1, 0, 0, 0, false, 0),
 
-        CLOCKWISE_90(0, 1, 0, 1, true),
+        CLOCKWISE_90(0, 1, 0, 1, true, 90),
 
-        CLOCKWISE_180(-1, 0, 1, 1, false),
+        CLOCKWISE_180(-1, 0, 1, 1, false, 180),
 
-        CLOCKWISE_270(0, -1, 1, 0, true);
+        CLOCKWISE_270(0, -1, 1, 0, true, 270);
 
+        final int rotationInDegrees;
         final long cos; // long field necessary for precise calculation of the bounds of the rectangular area
         final long sin;
         final long bX;
         final long bY;
         final boolean switchWidthAndHeight;
 
-        private RotationMode(long cos, long sin, long bX, long bY, boolean switchWidthAndHeight) {
+        private RotationMode(
+            long cos,
+            long sin,
+            long bX,
+            long bY,
+            boolean switchWidthAndHeight,
+            int rotationInDegrees)
+        {
             this.cos = cos;
             this.sin = sin;
             this.bX = bX;
             this.bY = bY;
             this.switchWidthAndHeight = switchWidthAndHeight;
+            this.rotationInDegrees = rotationInDegrees;
         }
 
         public static RotationMode valueOf(int clockwiseRotationInDegrees) {
@@ -87,6 +96,10 @@ public final class RotatingPlanePyramidSource
                 default:
                     return false;
             }
+        }
+
+        public int rotationInDegrees() {
+            return rotationInDegrees;
         }
 
         public final LinearOperator operator(long width, long height) {
