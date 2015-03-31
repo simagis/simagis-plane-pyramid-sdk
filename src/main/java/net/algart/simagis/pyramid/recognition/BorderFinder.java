@@ -45,12 +45,12 @@ import java.util.Locale;
 
 public class BorderFinder {
 
-    private int checkedLengthAtBorderX = 100;
-    private int checkedLengthAtBorderY = 100;
+    private int checkedLengthAtBorderX = 50;
+    private int checkedLengthAtBorderY = 50;
     private int checkedSizeAtBackgroundX = 30;
     private int checkedSizeAtBackgroundY = 30;
     private double maxBrightnessVariationAlongBorder = 40 / 255.0;
-    private double minBrightnessDifferenceFromBackground = 5 / 255.0;
+    private double minBrightnessDifferenceFromBackground = 40 / 255.0;
     private double brightnessVariationAlongBorderCorrection = 10.0 / 255.0;
     private double brightnessDifferenceFromBackgroundCorrection = 10.0 / 255.0;
 
