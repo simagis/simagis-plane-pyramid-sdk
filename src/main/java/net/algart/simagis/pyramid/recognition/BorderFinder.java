@@ -45,8 +45,9 @@ import java.util.Locale;
 
 public class BorderFinder {
 
-    private int checkedLengthAtBorderX = 50;
-    private int checkedLengthAtBorderY = 50;
+    private int checkedLengthAlongBorderX = 100;
+    private int checkedLengthAlongBorderY = 100;
+    private int minLengthAlongBorder = 25;
     private int checkedSizeAtBackgroundX = 30;
     private int checkedSizeAtBackgroundY = 30;
     private double maxBrightnessVariationAlongBorder = 40 / 255.0;
@@ -105,26 +106,39 @@ public class BorderFinder {
 
     // Configuration parameters:
 
-    public int getCheckedLengthAtBorderX() {
-        return checkedLengthAtBorderX;
+    public int getCheckedLengthAlongBorderX() {
+        return checkedLengthAlongBorderX;
     }
 
-    public void setCheckedLengthAtBorderX(int checkedLengthAtBorderX) {
-        if (checkedLengthAtBorderX <= 0) {
-            throw new IllegalArgumentException("Negative or zero checkedLengthAtBorderX = " + checkedLengthAtBorderX);
+    public void setCheckedLengthAlongBorderX(int checkedLengthAlongBorderX) {
+        if (checkedLengthAlongBorderX <= 0) {
+            throw new IllegalArgumentException("Negative or zero checkedLengthAtBorderX = "
+                + checkedLengthAlongBorderX);
         }
-        this.checkedLengthAtBorderX = checkedLengthAtBorderX;
+        this.checkedLengthAlongBorderX = checkedLengthAlongBorderX;
     }
 
-    public int getCheckedLengthAtBorderY() {
-        return checkedLengthAtBorderY;
+    public int getCheckedLengthAlongBorderY() {
+        return checkedLengthAlongBorderY;
     }
 
-    public void setCheckedLengthAtBorderY(int checkedLengthAtBorderY) {
-        if (checkedLengthAtBorderY <= 0) {
-            throw new IllegalArgumentException("Negative or zero checkedLengthAtBorderY = " + checkedLengthAtBorderY);
+    public void setCheckedLengthAlongBorderY(int checkedLengthAlongBorderY) {
+        if (checkedLengthAlongBorderY <= 0) {
+            throw new IllegalArgumentException("Negative or zero checkedLengthAtBorderY = "
+                + checkedLengthAlongBorderY);
         }
-        this.checkedLengthAtBorderY = checkedLengthAtBorderY;
+        this.checkedLengthAlongBorderY = checkedLengthAlongBorderY;
+    }
+
+    public int getMinLengthAlongBorder() {
+        return minLengthAlongBorder;
+    }
+
+    public void setMinLengthAlongBorder(int minLengthAlongBorder) {
+        if (minLengthAlongBorder <= 0) {
+            throw new IllegalArgumentException("Negative or zero minLengthAlongBorder = " + minLengthAlongBorder);
+        }
+        this.minLengthAlongBorder = minLengthAlongBorder;
     }
 
     public int getCheckedSizeAtBackgroundX() {
@@ -214,13 +228,17 @@ public class BorderFinder {
     }
 
     public void setAllConfigurationFromSystemProperties() {
-        String s = System.getProperty(BorderFinder.class.getName() + ".checkedLengthAtBorderX");
+        String s = System.getProperty(BorderFinder.class.getName() + ".checkedLengthAlongBorderX");
         if (s != null) {
-            setCheckedLengthAtBorderX(Integer.parseInt(s));
+            setCheckedLengthAlongBorderX(Integer.parseInt(s));
         }
-        s = System.getProperty(BorderFinder.class.getName() + ".checkedLengthAtBorderY");
+        s = System.getProperty(BorderFinder.class.getName() + ".checkedLengthAlongBorderY");
         if (s != null) {
-            setCheckedLengthAtBorderY(Integer.parseInt(s));
+            setCheckedLengthAlongBorderY(Integer.parseInt(s));
+        }
+        s = System.getProperty(BorderFinder.class.getName() + ".minLengthAlongBorder");
+        if (s != null) {
+            setMinLengthAlongBorder(Integer.parseInt(s));
         }
         s = System.getProperty(BorderFinder.class.getName() + ".checkedSizeAtBackgroundX");
         if (s != null) {
@@ -315,8 +333,8 @@ public class BorderFinder {
         }
         final long minX = Math.max(0, leftTopEstimationX - sizeForSearchX / 2);
         final long minY = Math.max(0, leftTopEstimationY - sizeForSearchY / 2);
-        final long maxX = Math.min(dimX - 1 - checkedLengthAtBorderX, leftTopEstimationX + sizeForSearchX / 2);
-        final long maxY = Math.min(dimY - 1 - checkedLengthAtBorderY, leftTopEstimationY + sizeForSearchY / 2);
+        final long maxX = Math.min(dimX - 1 - checkedLengthAlongBorderX, leftTopEstimationX + sizeForSearchX / 2);
+        final long maxY = Math.min(dimY - 1 - checkedLengthAlongBorderY, leftTopEstimationY + sizeForSearchY / 2);
         // Not too accurate: sizeForSearch=sizeForSearchY=2 really means 3x3 area. But symmetric.
         // Note that for an empty matrix we will have minX > maxX or minY > maxY.
         // Also note that we should not search last checkedLengthAtBorderX/Y pixels, in other case
@@ -340,6 +358,10 @@ public class BorderFinder {
         this.resultLeftTopQuality = bestQuality;
         this.resultLeftTopX = bestX;
         this.resultLeftTopY = bestY;
+        if (!Double.isNaN(bestQuality)) {
+            leftTopQuality(bestX, bestY);
+            // - this call for debugging needs only
+        }
         return !Double.isNaN(bestQuality);
     }
 
@@ -349,8 +371,8 @@ public class BorderFinder {
         }
         final int minX = (int) Math.max(0, leftTopEstimationX - sizeForSearchX / 2);
         final int minY = (int) Math.max(0, leftTopEstimationY - sizeForSearchY / 2);
-        final int maxX = (int) Math.min(dimX - 1 - checkedLengthAtBorderX, leftTopEstimationX + sizeForSearchX / 2);
-        final int maxY = (int) Math.min(dimY - 1 - checkedLengthAtBorderY, leftTopEstimationY + sizeForSearchY / 2);
+        final int maxX = (int) Math.min(dimX - 1 - checkedLengthAlongBorderX, leftTopEstimationX + sizeForSearchX / 2);
+        final int maxY = (int) Math.min(dimY - 1 - checkedLengthAlongBorderY, leftTopEstimationY + sizeForSearchY / 2);
         byte[] result = new byte[(int) (dimX * dimY)];
         JArrays.fillByteArray(result, (byte) 128);
         for (int y = minY; y <= maxY; y++) {
@@ -378,14 +400,14 @@ public class BorderFinder {
             final int minOrtogonalY = (int) Math.max(0, resultLeftTopY - th);
             final int maxOrtogonalX = (int) Math.min(dimX - 1, resultLeftTopX + th);
             final int maxOrtogonalY = (int) Math.min(dimY - 1, resultLeftTopY + th);
-            final int toX = (int) Math.min(resultLeftTopX + (long) checkedLengthAtBorderX, dimX - 1);
+            final int toX = (int) Math.min(resultLeftTopX + (long) checkedLengthAlongBorderX, dimX - 1);
             for (int x = (int) resultLeftTopX, ofs = (int) (slideOfs + resultIndex); x < toX; x++, ofs++) {
                 for (int y = minOrtogonalY; y <= maxOrtogonalY; y++) {
                     final long dy = y - resultLeftTopY;
                     result[ofs + (int) (dy * dimX)] = (byte) (color * 255.0 * (th - Math.abs(dy)) / (double) th);
                 }
             }
-            final int toY = (int) Math.min(resultLeftTopY + (long) checkedLengthAtBorderY, dimY - 1);
+            final int toY = (int) Math.min(resultLeftTopY + (long) checkedLengthAlongBorderY, dimY - 1);
             for (int y = (int) resultLeftTopY, ofs = (int) (slideOfs + resultIndex); y < toY; y++, ofs += dimX) {
                 for (int x = minOrtogonalX; x <= maxOrtogonalX; x++) {
                     final long dx = x - resultLeftTopX;
@@ -407,43 +429,68 @@ public class BorderFinder {
         assert checkedX == (int) checkedX;
         assert checkedY == (int) checkedY;
         // - because the slide matrix is direct-accessible
-        double averageOutside = averaged.array().getDouble(averaged.index(
+        final long checkedIndex = slide.index(checkedX, checkedY);
+        final int cornerByte = slide.array().getByte(checkedIndex);
+        final double corner = cornerByte / 255.0;
+        final int averagedOutsideByte = averaged.array().getByte(averaged.index(
             Math.max(0, checkedX - (checkedSizeAtBackgroundX / 2 + 2)),
-            Math.max(0, checkedY - (checkedSizeAtBackgroundY / 2 + 2)))) / 255.0;
+            Math.max(0, checkedY - (checkedSizeAtBackgroundY / 2 + 2))));
+        final double averageOutside = averagedOutsideByte / 255.0;
         // "+ 2" to be on the safe side: it is really a square outside the border
         // "Math.max" is not the best idea, because if the border is near the matrix limit, the average value
         // will include the border itself; but I hope it is not too important for the median
-        double averageInside = averaged.array().getDouble(averaged.index(
+        final int averagedInsideByte = averaged.array().getByte(averaged.index(
             Math.min(dimX - 1, checkedX + (checkedSizeAtBackgroundX / 2 + 2)),
-            Math.min(dimY - 1, checkedY + (checkedSizeAtBackgroundY / 2 + 2)))) / 255.0;
-        final long checkedIndex = slide.index(checkedX, checkedY);
-        int min = slide.array().getByte(checkedIndex);
-        int max = min;
-        final double current = min / 255.0;
-        final int toX = (int) Math.min(checkedX + (long) checkedLengthAtBorderX, dimX - 1);
+            Math.min(dimY - 1, checkedY + (checkedSizeAtBackgroundY / 2 + 2))));
+        final double averageInside = averagedInsideByte / 255.0;
+        final double differenceFromBackground = Math.min(
+            Math.abs(corner - averageOutside), Math.abs(corner - averageInside));
+        if (differenceFromBackground < minBrightnessDifferenceFromBackground) {
+            return Double.NaN;
+        }
+        int min = cornerByte;
+        int max = cornerByte;
+        final int minToX = (int) Math.min(checkedX + (long) minLengthAlongBorder, dimX - 1);
+        int toX = (int) Math.min(checkedX + (long) checkedLengthAlongBorderX, dimX - 1);
+        for (int x = (int) checkedX, ofs = (int) (slideOfs + checkedIndex); x < toX; x++, ofs++) {
+            final int v = slideBytes[ofs] & 0xFF;
+            if (Math.abs(v - averagedOutsideByte) < Math.abs(v - cornerByte)) {
+                // the border length is probable less than checkedLengthAlongBorderX
+                toX = Math.max((int) ((checkedX + x) / 2), minToX);
+                // let's check untile the center between the current and start position:
+                // maybe the line is just not strictly horizontal and we need to return essentially
+                break;
+            }
+        }
         for (int x = (int) checkedX, ofs = (int) (slideOfs + checkedIndex); x < toX; x++, ofs++) {
             final int v = slideBytes[ofs] & 0xFF;
             min = min <= v ? min : v;
             max = max >= v ? max : v;
         }
-        final int toY = (int) Math.min(checkedY + (long) checkedLengthAtBorderY, dimY - 1);
+        final int minToY = (int) Math.min(checkedY + (long) minLengthAlongBorder, dimY - 1);
+        int toY = (int) Math.min(checkedY + (long) checkedLengthAlongBorderY, dimY - 1);
+        for (int y = (int) checkedY, ofs = (int) (slideOfs + checkedIndex); y < toY; y++, ofs += dimX) {
+            final int v = slideBytes[ofs] & 0xFF;
+            if (Math.abs(v - averagedOutsideByte) < Math.abs(v - cornerByte)) {
+                // the border length is probable less than checkedLengthAlongBorderX
+                toY = Math.max((int) ((checkedY + y) / 2), minToY);
+                // let's check untile the center between the current and start position:
+                // maybe the line is just not strictly vertical and we need to return essentially
+                break;
+            }
+        }
         for (int y = (int) checkedY, ofs = (int) (slideOfs + checkedIndex); y < toY; y++, ofs += dimX) {
             final int v = slideBytes[ofs] & 0xFF;
             min = min <= v ? min : v;
             max = max >= v ? max : v;
         }
-        double variationAlongBorder = (max - min) / 255.0;
-        double differenceFromBackground = Math.min(
-            Math.abs(current - averageOutside), Math.abs(current - averageInside));
+        final double variationAlongBorder = (max - min) / 255.0;
         if (variationAlongBorder > maxBrightnessVariationAlongBorder) {
             return Double.NaN;
             // NaN is little more stable solution than Infinity (maybe in future we'll change the sign of the result)
         }
-        if (differenceFromBackground < minBrightnessDifferenceFromBackground) {
-            return Double.NaN;
-        }
-        return -(variationAlongBorder + brightnessVariationAlongBorderCorrection)
-            / (differenceFromBackground + brightnessDifferenceFromBackgroundCorrection);
+        return -(variationAlongBorder + brightnessVariationAlongBorderCorrection) /
+            (differenceFromBackground + brightnessDifferenceFromBackgroundCorrection);
     }
 
 
@@ -482,6 +529,9 @@ public class BorderFinder {
         finder.findLeftTop();
         long t3 = System.nanoTime();
         final String fileName = ExternalAlgorithmCaller.removeFileExtension(file).getName();
+        ImageIO.write(
+            bufferedImage,
+            "JPEG", new File(resultFolder, "result.source." + fileName + ".jpg"));
         ImageIO.write(
             new MatrixToBufferedImageConverter.Packed3DToPackedRGB(false).toBufferedImage(finder.getAveraged()),
             "JPEG", new File(resultFolder, "result.averaged." + fileName + ".jpg"));
