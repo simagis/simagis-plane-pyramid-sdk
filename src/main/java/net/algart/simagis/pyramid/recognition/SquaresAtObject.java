@@ -46,8 +46,9 @@ public class SquaresAtObject {
     private final int dimCount;
 
     private final List<IRectangularArea> foundSquares = new ArrayList<IRectangularArea>();
-    private volatile int maxNumberOfSquares = 1;
+    private volatile int maxNumberOfSquares = 10000;
     private volatile long fixedSquareSide = 100;
+    private volatile long overlapOfSquares = 0;
 
     private SquaresAtObject(Matrix<? extends BitArray> sourceMatrix) {
         Objects.requireNonNull(sourceMatrix, "Null source matrix");
@@ -76,7 +77,7 @@ public class SquaresAtObject {
         return sourceMatrix;
     }
 
-    public Matrix<UpdatableBitArray> getMatrixWithoutFoundSquares() {
+    public Matrix<UpdatableBitArray> getWorkMatrix() {
         return workMatrix;
     }
 
@@ -106,7 +107,19 @@ public class SquaresAtObject {
         this.fixedSquareSide = fixedSquareSide;
     }
 
+    public long getOverlapOfSquares() {
+        return overlapOfSquares;
+    }
+
+    public void setOverlapOfSquares(long overlapOfSquares) {
+        this.overlapOfSquares = overlapOfSquares;
+    }
+
     public void findSquaresWithFixedSizes(ArrayContext arrayContext) {
+        if (overlapOfSquares >= fixedSquareSide) {
+            throw new IllegalStateException("Cannot find squares of fixed sizes with overlap " + overlapOfSquares
+                + " >= square side" + fixedSquareSide);
+        }
         for (int squareIndex = 0; squareIndex < maxNumberOfSquares; squareIndex++) {
             final ArrayContext ac = arrayContext == null ? null :
                 arrayContext.part(squareIndex, squareIndex + 1, maxNumberOfSquares);
@@ -119,16 +132,20 @@ public class SquaresAtObject {
             final Matrix<? extends UpdatablePArray> erosion = morphology.erosion(workMatrix, requiredSquarePattern);
             long t2 = System.nanoTime();
             final long firstNonZero = ((BitArray) erosion.array()).indexOf(0, Long.MAX_VALUE, true);
-            final IRectangularArea square;
+            final IRectangularArea square, reducedSquare;
             if (firstNonZero != -1) {
                 final IPoint center = IPoint.valueOf(workMatrix.coordinates(firstNonZero, null));
                 square = IRectangularArea.valueOf(
                     center.add(IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2)),
                     center.add(IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2 + fixedSquareSide - 1)));
                 // - Note: this square is an inversion of the pattern
+                final long reducedSide = fixedSquareSide - overlapOfSquares;
+                reducedSquare = IRectangularArea.valueOf(
+                    center.add(IPoint.valueOfEqualCoordinates(dimCount, -reducedSide / 2)),
+                    center.add(IPoint.valueOfEqualCoordinates(dimCount, -reducedSide / 2 + reducedSide - 1)));
                 foundSquares.add(square);
             } else {
-                square = null;
+                square = reducedSquare = null;
             }
             long t3 = System.nanoTime();
             debug(2, "Square #%d/%d %s in %.3f ms (%.3f erosion + %.3f finding center)%n",
@@ -139,7 +156,7 @@ public class SquaresAtObject {
                 debug(2, "Finishing loop: all squares are already found%n");
                 break;
             }
-            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(square,
+            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(reducedSquare,
                 Matrix.ContinuationMode.NULL_CONSTANT);
             // - contination mode is set only to be on the safe side:
             // correct algorithm should not go outside the matrix
@@ -172,16 +189,20 @@ public class SquaresAtObject {
             final IRectangularArea square = IRectangularArea.valueOf(
                 center.add(IPoint.valueOfEqualCoordinates(dimCount, -distanceToEdge)),
                 center.add(IPoint.valueOfEqualCoordinates(dimCount, distanceToEdge)));
+            final long reducedSide = 2 * distanceToEdge + 1 - overlapOfSquares;
             long t4 = System.nanoTime();
             debug(2, "Square #%d/%d found (%s) in %.3f ms (%.3f preparig + %.3f erosion + %.3f finding center)%n",
-                squareIndex + 1, maxNumberOfSquares,  square,
+                squareIndex + 1, maxNumberOfSquares, square,
                 (t4 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t4 - t3) * 1e-6);
-            if (distanceToEdge == 0) {
-                debug(2, "Finishing loop: all squares are already found, the rest of matrix is empty%n");
+            if (reducedSide <= 1) {
+                debug(2, "Finishing loop: all squares are already found%n");
                 break;
             }
             foundSquares.add(square);
-            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(square,
+            final IRectangularArea reducedSquare = IRectangularArea.valueOf(
+                center.add(IPoint.valueOfEqualCoordinates(dimCount, -reducedSide / 2)),
+                center.add(IPoint.valueOfEqualCoordinates(dimCount, -reducedSide / 2 + reducedSide - 1)));
+            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(reducedSquare,
                 Matrix.ContinuationMode.NULL_CONSTANT);
             // - contination mode is set only to be on the safe side:
             // correct algorithm should not go outside the matrix
