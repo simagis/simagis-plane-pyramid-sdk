@@ -29,6 +29,7 @@ import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 import net.algart.math.patterns.Patterns;
+import net.algart.math.patterns.UniformGridPattern;
 import net.algart.matrices.morphology.BasicMorphology;
 import net.algart.matrices.morphology.IterativeErosion;
 import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
@@ -46,6 +47,7 @@ public class SquaresAtObject {
 
     private final List<IRectangularArea> foundSquares = new ArrayList<IRectangularArea>();
     private volatile int maxNumberOfSquares = 1;
+    private volatile long fixedSquareSide = 100;
 
     private SquaresAtObject(Matrix<? extends BitArray> sourceMatrix) {
         Objects.requireNonNull(sourceMatrix, "Null source matrix");
@@ -93,7 +95,59 @@ public class SquaresAtObject {
         this.maxNumberOfSquares = maxNumberOfSquares;
     }
 
-    public void findSquares(ArrayContext arrayContext) {
+    public long getFixedSquareSide() {
+        return fixedSquareSide;
+    }
+
+    public void setFixedSquareSide(long fixedSquareSide) {
+        if (fixedSquareSide <= 0) {
+            throw new IllegalArgumentException("Zero or negative fixedSquareSide");
+        }
+        this.fixedSquareSide = fixedSquareSide;
+    }
+
+    public void findSquaresWithFixedSizes(ArrayContext arrayContext) {
+        for (int squareIndex = 0; squareIndex < maxNumberOfSquares; squareIndex++) {
+            final ArrayContext ac = arrayContext == null ? null :
+                arrayContext.part(squareIndex, squareIndex + 1, maxNumberOfSquares);
+            long t1 = System.nanoTime();
+            final BasicMorphology morphology = BasicMorphology.getInstance(ac);
+            final UniformGridPattern requiredSquarePattern = Patterns.newRectangularIntegerPattern(
+                IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2),
+                IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2 + fixedSquareSide - 1));
+            // - the side of such pattern is fixedSquareSide
+            final Matrix<? extends UpdatablePArray> erosion = morphology.erosion(workMatrix, requiredSquarePattern);
+            long t2 = System.nanoTime();
+            final long firstNonZero = ((BitArray) erosion.array()).indexOf(0, Long.MAX_VALUE, true);
+            final IRectangularArea square;
+            if (firstNonZero != -1) {
+                final IPoint center = IPoint.valueOf(workMatrix.coordinates(firstNonZero, null));
+                square = IRectangularArea.valueOf(
+                    center.add(IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2)),
+                    center.add(IPoint.valueOfEqualCoordinates(dimCount, -fixedSquareSide / 2 + fixedSquareSide - 1)));
+                // - Note: this square is an inversion of the pattern
+                foundSquares.add(square);
+            } else {
+                square = null;
+            }
+            long t3 = System.nanoTime();
+            debug(2, "Square #%d/%d %s in %.3f ms (%.3f erosion + %.3f finding center)%n",
+                squareIndex + 1, maxNumberOfSquares,
+                square == null ? "not found" : "found (" + square + ")",
+                (t3 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6);
+            if (square == null) {
+                debug(2, "Finishing loop: all squares are already found%n");
+                break;
+            }
+            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(square,
+                Matrix.ContinuationMode.NULL_CONSTANT);
+            // - contination mode is set only to be on the safe side:
+            // correct algorithm should not go outside the matrix
+            squareSubMatrix.array().fill(false);
+        }
+    }
+
+    public void findSquaresWithDecreasingSizes(ArrayContext arrayContext) {
         for (int squareIndex = 0; squareIndex < maxNumberOfSquares; squareIndex++) {
             final ArrayContext ac = arrayContext == null ? null :
                 arrayContext.part(squareIndex, squareIndex + 1, maxNumberOfSquares);
@@ -104,7 +158,6 @@ public class SquaresAtObject {
                 // 31-bit precision guarangees correct work even for very large matrices;
                 // in a very improbable case of overflow we just will not able to find the maximum exactly
                 workMatrix,
-                //TODO!! - it is workaround of the bug in AlgART!!
                 Patterns.newRectangularIntegerPattern(
                     IPoint.valueOfEqualCoordinates(dimCount, -1),
                     IPoint.valueOfEqualCoordinates(dimCount, 1)));
@@ -120,7 +173,7 @@ public class SquaresAtObject {
                 center.add(IPoint.valueOfEqualCoordinates(dimCount, -distanceToEdge)),
                 center.add(IPoint.valueOfEqualCoordinates(dimCount, distanceToEdge)));
             long t4 = System.nanoTime();
-            debug(2, "Square #%d/%d found %s in %.3f ms (%.3f preparig + %.3f erosion + %.3f finding center)%n",
+            debug(2, "Square #%d/%d found (%s) in %.3f ms (%.3f preparig + %.3f erosion + %.3f finding center)%n",
                 squareIndex + 1, maxNumberOfSquares,  square,
                 (t4 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t4 - t3) * 1e-6);
             if (distanceToEdge == 0) {
@@ -128,12 +181,12 @@ public class SquaresAtObject {
                 break;
             }
             foundSquares.add(square);
-            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(square, Matrix.ContinuationMode.NONE);
+            Matrix<UpdatableBitArray> squareSubMatrix = workMatrix.subMatrix(square,
+                Matrix.ContinuationMode.NULL_CONSTANT);
             // - contination mode is set only to be on the safe side:
             // correct algorithm should not go outside the matrix
             squareSubMatrix.array().fill(false);
         }
-
     }
 
     private static void debug(int level, String format, Object... args) {

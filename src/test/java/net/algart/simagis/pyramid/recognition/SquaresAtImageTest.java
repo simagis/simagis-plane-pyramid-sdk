@@ -27,6 +27,7 @@ package net.algart.simagis.pyramid.recognition;
 import net.algart.arrays.*;
 import net.algart.external.ExternalAlgorithmCaller;
 import net.algart.external.MatrixToBufferedImageConverter;
+import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 import net.algart.math.functions.LinearFunc;
 
@@ -61,12 +62,14 @@ public class SquaresAtImageTest {
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             System.out.println("Usage:");
-            System.out.println("    " + SquaresAtImageTest.class.getName() + " binary-image-file maxNumberOfSquares");
+            System.out.println("    " + SquaresAtImageTest.class.getName()
+                + " binary-image-file maxNumberOfSquares [requiredSquareSize]");
             return;
         }
         final File file = new File(args[0]);
         final String fileName = ExternalAlgorithmCaller.removeFileExtension(file).getName();
         final int maxNumberOfSquares = Integer.parseInt(args[1]);
+        final int requiredSquareSize = args.length >= 3 ? Integer.parseInt(args[2]) : -1;
         /* //TODO!! debug this
         final BufferedImage bufferedImage = ImageIO.read(file);
         if (bufferedImage == null) {
@@ -87,12 +90,22 @@ public class SquaresAtImageTest {
             "PNG", new File(file.getParentFile(), "result.original." + fileName + ".png"));
 
         squaresAtObject.setMaxNumberOfSquares(maxNumberOfSquares);
-        squaresAtObject.findSquares(null);
+        if (requiredSquareSize >= 0) {
+            squaresAtObject.setFixedSquareSide(requiredSquareSize);
+            squaresAtObject.findSquaresWithFixedSizes(null);
+        } else {
+            squaresAtObject.findSquaresWithDecreasingSizes(null);
+        }
 
         ImageIO.write(
             new MatrixToBufferedImageConverter.Packed3DToPackedRGB(false).toBufferedImage(
                 Matrices.asFuncMatrix(LinearFunc.getInstance(0, 255.0), ByteArray.class,
                     squaresAtObject.getMatrixWithoutFoundSquares())),
             "PNG", new File(file.getParentFile(), "result.squares." + fileName + ".png"));
+        System.out.println();
+        final List<IRectangularArea> foundSquares = squaresAtObject.getFoundSquares();
+        for (int i = 0; i < foundSquares.size(); i++) {
+            System.out.printf("Found square #%d: %s%n", i, foundSquares.get(i));
+        }
     }
 }
