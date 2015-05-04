@@ -36,7 +36,7 @@
         <dependency>
             <groupId>net.algart</groupId>
             <artifactId>algart</artifactId>
-            <version>1.2.1</version>
+            <version>1.2.2</version>
         </dependency>
         <dependency>
             <groupId>net.simagis.ext</groupId>

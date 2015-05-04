@@ -103,7 +103,7 @@ public class SquaresAtObject {
                 UpdatableIntArray.class,
                 // 31-bit precision guarangees correct work even for very large matrices;
                 // in a very improbable case of overflow we just will not able to find the maximum exactly
-                Matrices.asFuncMatrix(Func.IDENTITY, BitArray.class, workMatrix),
+                workMatrix,
                 //TODO!! - it is workaround of the bug in AlgART!!
                 Patterns.newRectangularIntegerPattern(
                     IPoint.valueOfEqualCoordinates(dimCount, -1),

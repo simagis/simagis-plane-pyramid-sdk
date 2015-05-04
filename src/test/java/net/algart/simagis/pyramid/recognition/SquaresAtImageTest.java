@@ -25,20 +25,12 @@
 package net.algart.simagis.pyramid.recognition;
 
 import net.algart.arrays.*;
-import net.algart.contexts.DefaultArrayContext;
-import net.algart.external.BufferedImageToMatrixConverter;
 import net.algart.external.ExternalAlgorithmCaller;
 import net.algart.external.MatrixToBufferedImageConverter;
-import net.algart.math.IPoint;
 import net.algart.math.functions.Func;
 import net.algart.math.functions.LinearFunc;
-import net.algart.math.patterns.Patterns;
-import net.algart.matrices.morphology.BasicMorphology;
-import net.algart.matrices.morphology.IterativeErosion;
-import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -87,24 +79,6 @@ public class SquaresAtImageTest {
         final Matrix<BitArray> binary = Matrices.asFuncMatrix(Func.IDENTITY, BitArray.class, bands.get(0));
         // - only 1st component
 
-/*
-        final IterativeErosion iterativeErosion = IterativeErosion.getInstance(
-            BasicMorphology.getInstance(new MyContext()),
-            UpdatableIntArray.class,
-            // 31-bit precision guarangees correct work even for very large matrices;
-            // in a very improbable case of overflow we just will not able to find the maximum exactly
-            binary,
-            Patterns.newRectangularIntegerPattern(
-                IPoint.valueOfEqualCoordinates(binary.dimCount(), -1),
-                IPoint.valueOfEqualCoordinates(binary.dimCount(), 1)));
-        iterativeErosion.process();
-        ImageIO.write(
-            new MatrixToBufferedImageConverter.Packed3DToPackedRGB(false).toBufferedImage(
-                Matrices.asFuncMatrix(Func.IDENTITY, ByteArray.class,
-                    iterativeErosion.result())),
-            "PNG", new File(file.getParentFile(), "result.erosion." + fileName + ".png"));
-        System.out.println("EROSION done");
-*/
         SquaresAtObject squaresAtObject = SquaresAtObject.getInstance(binary);
         ImageIO.write(
             new MatrixToBufferedImageConverter.Packed3DToPackedRGB(false).toBufferedImage(
