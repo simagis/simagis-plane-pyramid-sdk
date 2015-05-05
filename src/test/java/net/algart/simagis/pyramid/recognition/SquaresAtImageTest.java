@@ -72,6 +72,7 @@ public class SquaresAtImageTest {
         final int maxNumberOfSquares = Integer.parseInt(args[1]);
         final int overlapOfSquares = Integer.parseInt(args[2]);
         final int requiredSquareSize = args.length >= 4 ? Integer.parseInt(args[3]) : -1;
+        System.out.println("Loading image...");
         /* //TODO!! debug this
         final BufferedImage bufferedImage = ImageIO.read(file);
         if (bufferedImage == null) {
@@ -84,15 +85,17 @@ public class SquaresAtImageTest {
         final Matrix<BitArray> binary = Matrices.asFuncMatrix(Func.IDENTITY, BitArray.class, bands.get(0));
         // - only 1st component
 
-        SquaresAtObject squaresAtObject = SquaresAtObject.getInstance(binary);
         ImageIO.write(
             new MatrixToBufferedImageConverter.Packed3DToPackedRGB(false).toBufferedImage(
-                Matrices.asFuncMatrix(LinearFunc.getInstance(0, 255.0), ByteArray.class,
-                    squaresAtObject.getWorkMatrix())),
+                Matrices.asFuncMatrix(LinearFunc.getInstance(0, 255.0), ByteArray.class, binary)),
             "PNG", new File(file.getParentFile(), "result.original." + fileName + ".png"));
+
+        System.out.println("Creating algorithm class...");
+        SquaresAtObject squaresAtObject = SquaresAtObject.getInstance(binary);
 
         squaresAtObject.setMaxNumberOfSquares(maxNumberOfSquares);
         squaresAtObject.setOverlapOfSquares(overlapOfSquares);
+        System.out.println("Starting algorithm...");
         if (requiredSquareSize >= 0) {
             squaresAtObject.setFixedSquareSide(requiredSquareSize);
             squaresAtObject.findSquaresWithFixedSizes(null);
@@ -109,10 +112,10 @@ public class SquaresAtImageTest {
         final List<IRectangularArea> foundSquares = squaresAtObject.getFoundSquares();
         final Matrix<UpdatablePArray> result = Arrays.SMM.newLazyCopy(UpdatablePArray.class,
             Matrices.asFuncMatrix(LinearFunc.getInstance(0, 255.0), ByteArray.class, binary));
-        final Random rnd = new Random();
+        final Random rnd = new Random(0);
         for (int i = 0; i < foundSquares.size(); i++) {
             final IRectangularArea r = foundSquares.get(i);
-            System.out.printf("Found square #%d: %s%n", i, r);
+//            System.out.printf("Found square #%d: %s%n", i, r);
             result.subMatrix(r, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(rnd.nextInt(100));
         }
         ImageIO.write(
