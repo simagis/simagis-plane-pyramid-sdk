@@ -26,8 +26,10 @@ package net.algart.simagis.pyramid;
 
 import net.algart.arrays.Matrix;
 import net.algart.arrays.PArray;
+import net.algart.math.IRectangularArea;
 
 import java.nio.channels.NotYetConnectedException;
+import java.util.Collection;
 import java.util.NoSuchElementException;
 
 public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidSource {
@@ -65,6 +67,10 @@ public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidS
         return parent().elementType();
     }
 
+    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+        return parent().actualZeroLevelRectangles();
+    }
+
     public Matrix<? extends PArray> readSubMatrix(
             int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException
@@ -92,6 +98,10 @@ public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidS
 
     public boolean isDataReady() {
         return parent().isDataReady();
+    }
+
+    public String additionalMetadata() {
+        return parent().additionalMetadata();
     }
 
     public void loadResources() {

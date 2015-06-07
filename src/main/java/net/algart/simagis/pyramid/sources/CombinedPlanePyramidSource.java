@@ -24,11 +24,13 @@
 
 package net.algart.simagis.pyramid.sources;
 
+import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.simagis.pyramid.PlanePyramidTools;
 import net.algart.arrays.*;
 
 import java.nio.channels.NotYetConnectedException;
+import java.util.Collection;
 
 public final class CombinedPlanePyramidSource
     extends AbstractArrayProcessorWithContextSwitching
@@ -115,14 +117,18 @@ public final class CombinedPlanePyramidSource
             mainParent.dimensions(resolutionLevel);
     }
 
-    @Override
     public boolean isElementTypeSupported() {
         return mainParent.isElementTypeSupported() || overridingParent.isElementTypeSupported();
     }
 
-    @Override
     public Class<?> elementType() throws UnsupportedOperationException {
         return mainParent.isElementTypeSupported() ? mainParent.elementType() : overridingParent.elementType();
+    }
+
+    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+        return existInOverriding(0) ?
+            overridingParent.actualZeroLevelRectangles() :
+            mainParent.actualZeroLevelRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY) {
@@ -144,7 +150,6 @@ public final class CombinedPlanePyramidSource
             mainParent.readFullMatrix(resolutionLevel);
     }
 
-    @Override
     public boolean isSpecialMatrixSupported(SpecialImageKind kind) {
         int resolutionLevel = numberOfResolutions() - 1;
         return existInOverriding(resolutionLevel) ?  // why not?
@@ -161,6 +166,12 @@ public final class CombinedPlanePyramidSource
 
     public boolean isDataReady() {
         return mainParent.isDataReady() && overridingParent.isDataReady();
+    }
+
+    public String additionalMetadata() {
+        return existInOverriding(0) ?
+            overridingParent.additionalMetadata() :
+            mainParent.additionalMetadata();
     }
 
     public void loadResources() {

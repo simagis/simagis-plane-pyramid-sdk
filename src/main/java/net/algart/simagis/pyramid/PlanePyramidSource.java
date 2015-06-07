@@ -28,9 +28,11 @@ import net.algart.arrays.Arrays;
 import net.algart.arrays.Matrices;
 import net.algart.arrays.Matrix;
 import net.algart.arrays.PArray;
+import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 
 import java.nio.channels.NotYetConnectedException;
+import java.util.Collection;
 import java.util.NoSuchElementException;
 
 public interface PlanePyramidSource {
@@ -264,11 +266,25 @@ public interface PlanePyramidSource {
 
     public boolean[] getResolutionLevelsAvailability();
 
-    // First element is always equal to bandCount(); number of elements is always 3.
-    // Always returns new Java array (never returns a reference to an internal field).
+    /**
+     * <p>Returns dimensions of any pyramid level. Number of elements in the result arrays is always 3:</p>
+     * <ul>
+     * <li>first element <tt>result[0]</tt> is always equal to {@link #bandCount()};</li>
+     * <li>the element <tt>result[{@link #DIM_WIDTH}]</tt> is the <i>x</i>-dimension of the level in pixels;
+     * <li>the element <tt>result[{@link #DIM_HEIGHT}]</tt> is the <i>y</i>-dimension of the level in pixels.
+     * </ul>
+     *
+     * <p>This method always returns a new Java array and never returns a reference to an internal field.</p>
+     *
+     * @param resolutionLevel the level of pyramid; zero level (<tt>resolutionLevel=0</tt>) corresponds
+     *                        to the best resolution.
+     * @return dimensions of the specified pyramid level.
+     * @throws NoSuchElementException if <tt>!{@link #isResolutionLevelAvailable(int)
+     *                                isResolutionLevelAvailable(resolutionLevel)}</tt>
+     */
+    //
     public long[] dimensions(int resolutionLevel)
         throws NoSuchElementException;
-    // throws if !isResolutionLevelAvailable(resolutionLevel)
 
     /**
      * Returns <tt>true</tt> if {@link #elementType()} method works properly.
@@ -281,6 +297,22 @@ public interface PlanePyramidSource {
     public boolean isElementTypeSupported();
 
     public Class<?> elementType() throws UnsupportedOperationException;
+
+    /**
+     * <p>Returns a set of all areas (2D rectangles), filled by actual data, at the zero level.
+     * All other areas should be considered to be a background and may be not passed to
+     * image analysis algorithms.</p>
+     *
+     * <p>Some pyramids, including the default implementation in {@link AbstractPlanePyramidSource}, do not
+     * support this feature. In this case, this method returns <tt>null</tt>. This situation may be
+     * interpreted as if we have only 1 actual area, corresponding to the whole pyramid
+     * from (0,&nbsp;0) to <nobr>({@link #dimensions(int) dimensions}(0)[{@link #DIM_WIDTH}]&minus;1,
+     * {@link #dimensions(int) dimensions}(0)[{@link #DIM_HEIGHT}]&minus;1).</p>
+     *
+     * @return a set of all areas (2D rectangles), filled by actual data, at the level #0;
+     * may be <tt>null</tt>, it it is not supported.
+     */
+    public Collection<IRectangularArea> actualZeroLevelRectangles();
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException;
@@ -318,6 +350,14 @@ public interface PlanePyramidSource {
      * @return whether the data at all available levels of this source are available.
      */
     public boolean isDataReady();
+
+    /**
+     * Returns some additional information about this pyramid or <tt>null</tt> if it is not supported.
+     * The returned string should be formatted according JSON standard.
+     *
+     * @return additional information about the pyramid or <tt>null</tt>.
+     */
+    public String additionalMetadata();
 
     /**
      * Reinitializes object and loads all necessary resources.

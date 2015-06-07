@@ -24,11 +24,13 @@
 
 package net.algart.simagis.pyramid.sources;
 
+import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.arrays.*;
 
 import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -51,31 +53,39 @@ public final class DelayedPlanePyramidSource
         boolean[] resolutionLevelsAvailability)
     {
         super(null);
-        if (zeroLevelDimensions == null)
+        if (zeroLevelDimensions == null) {
             throw new NullPointerException("Null array of zero-level dimensions");
-        if (resolutionLevelsAvailability == null)
+        }
+        if (resolutionLevelsAvailability == null) {
             throw new NullPointerException("Null array of availability of resolution levels");
-        if (zeroLevelDimensions.length != 3)
+        }
+        if (zeroLevelDimensions.length != 3) {
             throw new IllegalArgumentException("Illegal length of zero-level dimensions array "
                 + zeroLevelDimensions.length);
+        }
         long bandCount = zeroLevelDimensions[0];
         long dimX = zeroLevelDimensions[1];
         long dimY = zeroLevelDimensions[2];
         if (dimX <= 0 || dimY <= 0) // more strict requirement (>0) than the usual requirement for matrices (>=0)
+        {
             throw new IllegalArgumentException("Illegal zero-level dimensions " + dimX + "x" + dimY
                 + " (must be positive)");
-        if (bandCount <= 0)
+        }
+        if (bandCount <= 0) {
             throw new IllegalArgumentException("Number of bands must be positive");
-        if (bandCount > Integer.MAX_VALUE)
+        }
+        if (bandCount > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Too large number of bands (>Integer.MAX_VALUE)");
-        if (compression <= 1)
+        }
+        if (compression <= 1) {
             throw new IllegalArgumentException("Compression must be 2 or greater");
+        }
         this.bandCount = (int) bandCount;
         this.compression = compression;
         this.resolutionLevelsAvailability = resolutionLevelsAvailability.clone();
         this.dimensions = new ArrayList<long[]>();
         for (int k = 0; k < resolutionLevelsAvailability.length; k++) {
-            this.dimensions.add(new long[]{bandCount, dimX, dimY});
+            this.dimensions.add(new long[] {bandCount, dimX, dimY});
             dimX /= compression;
             dimY /= compression;
         }
@@ -88,7 +98,7 @@ public final class DelayedPlanePyramidSource
         int compression,
         boolean[] resolutionLevelsAvailability)
     {
-        return newInstance(new long[]{dimX, dimY, bandCount}, compression, resolutionLevelsAvailability);
+        return newInstance(new long[] {dimX, dimY, bandCount}, compression, resolutionLevelsAvailability);
     }
 
     public static DelayedPlanePyramidSource newInstance(
@@ -106,20 +116,26 @@ public final class DelayedPlanePyramidSource
     }
 
     public void setParent(PlanePyramidSource parent) {
-        if (parent == null)
+        if (parent == null) {
             throw new NullPointerException("Cannot change the parent back to null value");
-        if (parent.numberOfResolutions() != numberOfResolutions())
+        }
+        if (parent.numberOfResolutions() != numberOfResolutions()) {
             throw new IllegalArgumentException("parent.numberOfResolutions() != numberOfResolutions()");
-        if (parent.bandCount() != bandCount)
+        }
+        if (parent.bandCount() != bandCount) {
             throw new IllegalArgumentException("parent.bandCount() != bandCount()");
+        }
         for (int level = 0; level < resolutionLevelsAvailability.length; level++) {
-            if (parent.isResolutionLevelAvailable(level) != resolutionLevelsAvailability[level])
+            if (parent.isResolutionLevelAvailable(level) != resolutionLevelsAvailability[level]) {
                 throw new IllegalArgumentException("parent.isResolutionLevelAvailable(" + level
                     + ") != resolutionLevelsAvailability[" + level + "]");
+            }
             if (resolutionLevelsAvailability[level] &&
                 !java.util.Arrays.equals(parent.dimensions(level), dimensions.get(level)))
+            {
                 throw new IllegalArgumentException("parent.dimensions(" + level
                     + ") != dimensions(" + level + ")");
+            }
         }
         synchronized (lock) {
             this.parent = parent;
@@ -152,7 +168,6 @@ public final class DelayedPlanePyramidSource
         return resolutionLevelsAvailability[resolutionLevel];
     }
 
-    @Override
     public boolean[] getResolutionLevelsAvailability() {
         return resolutionLevelsAvailability.clone();
     }
@@ -161,27 +176,37 @@ public final class DelayedPlanePyramidSource
         return dimensions.get(resolutionLevel).clone();
     }
 
-    @Override
     public boolean isElementTypeSupported() {
         PlanePyramidSource parent = getParent();
         return parent != null && parent.isElementTypeSupported();
     }
 
-    @Override
     public Class<?> elementType() throws UnsupportedOperationException {
         PlanePyramidSource parent = getParent();
-        if (parent == null)
+        if (parent == null) {
             throw new UnsupportedOperationException("elementType() method is not supported yet, "
                 + "because the parent is not set yet");
+        }
         return parent.elementType();
+    }
+
+
+    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+        PlanePyramidSource parent = getParent();
+        if (parent == null) {
+            throw new UnsupportedOperationException("actualZeroLevelRectangles() method is not supported yet, "
+                + "because the parent is not set yet");
+        }
+        return parent.actualZeroLevelRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException
     {
         PlanePyramidSource parent = getParent();
-        if (parent == null)
+        if (parent == null) {
             throw new NotYetConnectedException();
+        }
         return parent.readSubMatrix(resolutionLevel, fromX, fromY, toX, toY);
     }
 
@@ -194,24 +219,25 @@ public final class DelayedPlanePyramidSource
         throws NoSuchElementException, NotYetConnectedException, UnsupportedOperationException
     {
         PlanePyramidSource parent = getParent();
-        if (parent == null)
+        if (parent == null) {
             throw new NotYetConnectedException();
+        }
         return parent.readFullMatrix(resolutionLevel);
     }
 
-    @Override
     public boolean isSpecialMatrixSupported(SpecialImageKind kind) {
         PlanePyramidSource parent = getParent();
-        if (parent == null)
+        if (parent == null) {
             throw new NotYetConnectedException();
+        }
         return parent.isSpecialMatrixSupported(kind);
     }
 
-    @Override
     public Matrix<? extends PArray> readSpecialMatrix(SpecialImageKind kind) throws NotYetConnectedException {
         PlanePyramidSource parent = getParent();
-        if (parent == null)
+        if (parent == null) {
             throw new NotYetConnectedException();
+        }
         return parent.readSpecialMatrix(kind);
     }
 
@@ -220,7 +246,15 @@ public final class DelayedPlanePyramidSource
         return parent != null && parent.isDataReady();
     }
 
-    @Override
+    public String additionalMetadata() {
+        PlanePyramidSource parent = getParent();
+        if (parent == null) {
+            throw new UnsupportedOperationException("additionalMetadata() method is not supported yet, "
+                + "because the parent is not set yet");
+        }
+        return parent.additionalMetadata();
+    }
+
     public void loadResources() {
         PlanePyramidSource parent = getParent();
         if (parent != null) {

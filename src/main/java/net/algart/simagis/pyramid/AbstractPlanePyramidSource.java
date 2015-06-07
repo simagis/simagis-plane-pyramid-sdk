@@ -182,6 +182,10 @@ public abstract class AbstractPlanePyramidSource
             + super.getClass()); // avoiding IDEA bug
     }
 
+    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+        return null;
+    }
+
     // Note: this implementation cannot read data outside the full matrix
     public Matrix<? extends PArray> readSubMatrix(
         int resolutionLevel, long fromX, long fromY, long toX, long toY)
@@ -296,6 +300,19 @@ public abstract class AbstractPlanePyramidSource
         return true;
     }
 
+    public String additionalMetadata() {
+        return null;
+    }
+
+    /**
+     * This implementation does nothing.
+     *
+     * <p>If your implementation overrides this method, it must call <tt>super.loadResources</tt> at the end &mdash;
+     * because it is possible that future version will do something useful.
+     */
+    public void loadResources() {
+    }
+
     /**
      * This implementation just calls {@link #freeResources()}.
      * It is a good solution for most cases:
@@ -308,15 +325,6 @@ public abstract class AbstractPlanePyramidSource
      */
     public void freeResources(FlushMethod flushMethod) {
         freeResources();
-    }
-
-    /**
-     * This implementation does nothing.
-     *
-     * <p>If your implementation overrides this method, it must call <tt>super.loadResources</tt> at the end &mdash;
-     * because it is possible that future version will do something useful.
-     */
-    public void loadResources() {
     }
 
     /**
