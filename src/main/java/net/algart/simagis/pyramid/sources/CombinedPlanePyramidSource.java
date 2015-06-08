@@ -24,13 +24,13 @@
 
 package net.algart.simagis.pyramid.sources;
 
+import net.algart.arrays.*;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.simagis.pyramid.PlanePyramidTools;
-import net.algart.arrays.*;
 
 import java.nio.channels.NotYetConnectedException;
-import java.util.Collection;
+import java.util.List;
 
 public final class CombinedPlanePyramidSource
     extends AbstractArrayProcessorWithContextSwitching
@@ -125,10 +125,10 @@ public final class CombinedPlanePyramidSource
         return mainParent.isElementTypeSupported() ? mainParent.elementType() : overridingParent.elementType();
     }
 
-    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+    public List<IRectangularArea> zeroLevelActualRectangles() {
         return existInOverriding(0) ?
-            overridingParent.actualZeroLevelRectangles() :
-            mainParent.actualZeroLevelRectangles();
+            overridingParent.zeroLevelActualRectangles() :
+            mainParent.zeroLevelActualRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY) {

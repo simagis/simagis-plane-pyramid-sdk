@@ -29,7 +29,7 @@ import net.algart.arrays.PArray;
 import net.algart.math.IRectangularArea;
 
 import java.nio.channels.NotYetConnectedException;
-import java.util.Collection;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidSource {
@@ -67,8 +67,8 @@ public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidS
         return parent().elementType();
     }
 
-    public Collection<IRectangularArea> actualZeroLevelRectangles() {
-        return parent().actualZeroLevelRectangles();
+    public List<IRectangularArea> zeroLevelActualRectangles() {
+        return parent().zeroLevelActualRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(

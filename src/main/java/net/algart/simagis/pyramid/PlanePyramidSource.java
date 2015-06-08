@@ -32,7 +32,7 @@ import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 
 import java.nio.channels.NotYetConnectedException;
-import java.util.Collection;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 public interface PlanePyramidSource {
@@ -304,15 +304,15 @@ public interface PlanePyramidSource {
      * image analysis algorithms.</p>
      *
      * <p>Some pyramids, including the default implementation in {@link AbstractPlanePyramidSource}, do not
-     * support this feature. In this case, this method returns <tt>null</tt>. This situation may be
+     * support this feature. In this case, the method returns <tt>null</tt>. This situation may be
      * interpreted as if we have only 1 actual area, corresponding to the whole pyramid
      * from (0,&nbsp;0) to <nobr>({@link #dimensions(int) dimensions}(0)[{@link #DIM_WIDTH}]&minus;1,
      * {@link #dimensions(int) dimensions}(0)[{@link #DIM_HEIGHT}]&minus;1).</p>
      *
-     * @return a set of all areas (2D rectangles), filled by actual data, at the level #0;
-     * may be <tt>null</tt>, it it is not supported.
+     * @return a set of all areas (2D rectangles), filled by actual data, at the level #0,
+     * or <tt>null</tt> if it is not supported.
      */
-    public Collection<IRectangularArea> actualZeroLevelRectangles();
+    public List<IRectangularArea> zeroLevelActualRectangles();
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException;

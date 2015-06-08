@@ -24,13 +24,12 @@
 
 package net.algart.simagis.pyramid.sources;
 
+import net.algart.arrays.*;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
-import net.algart.arrays.*;
 
 import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -191,13 +190,13 @@ public final class DelayedPlanePyramidSource
     }
 
 
-    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+    public List<IRectangularArea> zeroLevelActualRectangles() {
         PlanePyramidSource parent = getParent();
         if (parent == null) {
-            throw new UnsupportedOperationException("actualZeroLevelRectangles() method is not supported yet, "
+            throw new UnsupportedOperationException("zeroLevelActualRectangles() method is not supported yet, "
                 + "because the parent is not set yet");
         }
-        return parent.actualZeroLevelRectangles();
+        return parent.zeroLevelActualRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)

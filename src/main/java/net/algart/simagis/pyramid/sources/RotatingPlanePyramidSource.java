@@ -24,13 +24,13 @@
 
 package net.algart.simagis.pyramid.sources;
 
-import net.algart.math.IRectangularArea;
-import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.arrays.*;
+import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 import net.algart.math.functions.LinearOperator;
+import net.algart.simagis.pyramid.PlanePyramidSource;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 public final class RotatingPlanePyramidSource
@@ -237,8 +237,8 @@ public final class RotatingPlanePyramidSource
         return parent.elementType();
     }
 
-    public Collection<IRectangularArea> actualZeroLevelRectangles() {
-        return parent.actualZeroLevelRectangles();
+    public List<IRectangularArea> zeroLevelActualRectangles() {
+        return parent.zeroLevelActualRectangles();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY) {

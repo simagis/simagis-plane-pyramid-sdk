@@ -182,7 +182,7 @@ public abstract class AbstractPlanePyramidSource
             + super.getClass()); // avoiding IDEA bug
     }
 
-    public Collection<IRectangularArea> actualZeroLevelRectangles() {
+    public List<IRectangularArea> zeroLevelActualRectangles() {
         return null;
     }
 

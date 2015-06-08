@@ -6,7 +6,7 @@
 
     <groupId>net.algart.simagis</groupId>
     <artifactId>simagis-plane-pyramid-sdk</artifactId>
-    <version>1.2.2</version>
+    <version>1.2.4</version>
 
     <name>Simagis Live Plane Pyramid SDK</name>
     <description>Open-source mini-SDK for implementing plane pyramid for Simagis Live project.</description>
