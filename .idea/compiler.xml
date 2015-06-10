@@ -25,7 +25,7 @@
         <module name="simagis-plane-pyramid-sdk" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="1.6">
       <module name="simagis-plane-pyramid-sdk" target="1.6" />
     </bytecodeTargetLevel>
   </component>

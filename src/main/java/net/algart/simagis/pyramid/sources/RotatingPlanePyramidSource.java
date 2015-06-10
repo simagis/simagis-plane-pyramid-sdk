@@ -25,11 +25,13 @@
 package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.*;
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 import net.algart.math.functions.LinearOperator;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,8 +39,7 @@ public final class RotatingPlanePyramidSource
     extends AbstractArrayProcessorWithContextSwitching
     implements PlanePyramidSource
 {
-    private static final boolean DEBUG_MODE = true;
-    private static final int DEBUG_LEVEL = 1;
+    private static final boolean DEBUG_MODE = false;
 
     public static enum RotationMode {
         NONE(1, 0, 0, 0, false, 0),
@@ -104,11 +105,15 @@ public final class RotatingPlanePyramidSource
             return rotationInDegrees;
         }
 
-        public final LinearOperator operator(long width, long height) {
+        public RotationMode reverse() {
+            return rotationInDegrees == 0 ? this : valueOf(360 - rotationInDegrees);
+        }
+
+        public LinearOperator operator(long width, long height) {
             return LinearOperator.getInstance(a(), b(width, height));
         }
 
-        public final long[] correctDimensions(long[] dimensionsToCorrect) {
+        public long[] correctDimensions(long[] dimensionsToCorrect) {
             if (switchWidthAndHeight) {
                 dimensionsToCorrect = dimensionsToCorrect.clone();
                 long temp = dimensionsToCorrect[2];
@@ -118,17 +123,33 @@ public final class RotatingPlanePyramidSource
             return dimensionsToCorrect;
         }
 
-        public final long[] correctFromAndTo(long width, long height, long fromX, long fromY, long toX, long toY) {
-            long rotatedFromX = cos * fromX + sin * fromY + bX(width);
-            long rotatedFromY = -sin * fromX + cos * fromY + bY(height);
+        public long[] correctFromAndTo(
+            long imageWidth, long imageHeight, long fromX, long fromY, long toX, long toY)
+        {
+            long rotatedFromX = cos * fromX + sin * fromY + bX(imageWidth);
+            long rotatedFromY = -sin * fromX + cos * fromY + bY(imageHeight);
             long rotatedDimX = cos * (toX - fromX) + sin * (toY - fromY);
             long rotatedDimY = -sin * (toX - fromX) + cos * (toY - fromY);
+//            System.out.printf("Rotated = %d,%d; %dx%d%n", rotatedFromX, rotatedFromY, rotatedDimX, rotatedDimY);
             long newFromX = rotatedDimX >= 0 ? rotatedFromX : rotatedFromX + rotatedDimX + 1;
             long newFromY = rotatedDimY >= 0 ? rotatedFromY : rotatedFromY + rotatedDimY + 1;
             long newToX = newFromX + Math.abs(rotatedDimX);
             long newToY = newFromY + Math.abs(rotatedDimY);
+//            System.out.printf("Result = %d,%d; %d,%d%n", newFromX, newFromY, newToX, newToY);
             return new long[] {newFromX, newFromY, newToX, newToY};
         }
+
+        public IRectangularArea correctRectangle(long imageWidth, long imageHeight, IRectangularArea rectangle) {
+            long fromX = rectangle.min(0);
+            long fromY = rectangle.min(1);
+            long toX = rectangle.max(0) + 1;
+            long toY = rectangle.max(1) + 1;
+            long[] fromAndTo = correctFromAndTo(imageWidth, imageHeight, fromX, fromY, toX, toY);
+            return IRectangularArea.valueOf(
+                IPoint.valueOf(fromAndTo[0], fromAndTo[1]),
+                IPoint.valueOf(fromAndTo[2] - 1, fromAndTo[3] - 1));
+        }
+
 
         public Matrix<? extends PArray> asRotated(Matrix<? extends PArray> m) {
             final long[] newDimensions = correctDimensions(m.dimensions());
@@ -238,13 +259,30 @@ public final class RotatingPlanePyramidSource
     }
 
     public List<IRectangularArea> zeroLevelActualRectangles() {
-        return parent.zeroLevelActualRectangles();
+        final long[] rotatedDim = this.dimensions(0);
+        final long rotatedWidth = rotatedDim[DIM_WIDTH];
+        final long rotatedHeight = rotatedDim[DIM_HEIGHT];
+        final RotationMode reverseRotation = rotationMode.reverse();
+        // Note: here we have reverse task in comparison with readSubMatrix
+        final List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
+        final List<IRectangularArea> result = new ArrayList<IRectangularArea>(parentRectangles.size());
+        for (IRectangularArea parentRectangle : parentRectangles) {
+            final IRectangularArea rotatedRectangle = reverseRotation.correctRectangle(
+                rotatedWidth, rotatedHeight, parentRectangle);
+            if (DEBUG_LEVEL >= 2) {
+                System.out.printf("Rotating %s by %d degree to %s inside %dx%d%n",
+                    parentRectangle, rotationMode.rotationInDegrees, rotatedRectangle, rotatedWidth, rotatedHeight);
+            }
+            result.add(rotatedRectangle);
+        }
+        return result;
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY) {
         long t1 = System.nanoTime();
         long[] parentDim = parent.dimensions(resolutionLevel);
-        long[] fromAndTo = rotationMode.correctFromAndTo(parentDim[1], parentDim[2], fromX, fromY, toX, toY);
+        long[] fromAndTo = rotationMode.correctFromAndTo(
+            parentDim[DIM_WIDTH], parentDim[DIM_HEIGHT], fromX, fromY, toX, toY);
         Matrix<? extends PArray> parentSubMatrix = parentWithSubtaskContext().readSubMatrix(
             resolutionLevel, fromAndTo[0], fromAndTo[1], fromAndTo[2], fromAndTo[3]);
         long t2 = System.nanoTime();
@@ -291,6 +329,11 @@ public final class RotatingPlanePyramidSource
 
     public void freeResources(FlushMethod flushMethod) {
         parent.freeResources(flushMethod);
+    }
+
+    @Override
+    public String toString() {
+        return "RotatingPlanePyramidSource-" + rotationMode.rotationInDegrees() + ", based on " + parent;
     }
 
     private PlanePyramidSource parentWithSubtaskContext() {
