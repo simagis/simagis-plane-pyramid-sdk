@@ -75,7 +75,7 @@ public class JoiningRectangles {
         //TODO!!
     }
 
-    private static abstract class Side {
+    private static abstract class Side implements Comparable<Side> {
         final IRectangularArea rectangle;
         final boolean first;
 
@@ -86,6 +86,13 @@ public class JoiningRectangles {
 
 
         abstract long coord();
+
+        @Override
+        public int compareTo(Side o) {
+            final long thisCoord = coord();
+            final long otherCoord = o.coord();
+            return thisCoord < otherCoord ? -1 : thisCoord > otherCoord ? 1 : 0;
+        }
     }
 
     private static class VerticalSide extends Side {
