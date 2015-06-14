@@ -571,6 +571,20 @@ public abstract class AbstractPlanePyramidSource
         return result;
     }
 
+    public static List<IRectangularArea> defaultZeroLevelActualRectangles(PlanePyramidSource source) {
+        if (source == null) {
+            throw new NullPointerException("Null source argument");
+        }
+        final long[] dimensions = source.dimensions(0);
+        if (dimensions[DIM_WIDTH] == 0 || dimensions[DIM_HEIGHT] == 0) {
+            return null;
+        } else {
+            return Collections.singletonList(IRectangularArea.valueOf(
+                IPoint.valueOf(0, 0),
+                IPoint.valueOf(dimensions[DIM_WIDTH] - 1, dimensions[DIM_HEIGHT - 1])));
+        }
+    }
+
     public static void checkSubMatrixRanges(
         long[] dimensions, long fromX, long fromY, long toX, long toY,
         boolean require31BitSize)

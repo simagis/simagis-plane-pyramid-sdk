@@ -24,10 +24,12 @@
 
 package net.algart.simagis.pyramid.sources;
 
+import net.algart.arrays.*;
+import net.algart.math.IPoint;
+import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.simagis.pyramid.PlanePyramidTools;
-import net.algart.arrays.*;
 
 import java.awt.*;
 import java.nio.channels.NotYetConnectedException;
@@ -36,8 +38,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSource implements PlanePyramidSource {
-
-    private static final int DEBUG_LEVEL = 1;
 
     private final PlanePyramidSource parent;
     private final List<long[]> dimensions;
@@ -62,18 +62,23 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
         double[] backgroundColor)
     {
         super(context);
-        if (parent == null)
+        if (parent == null) {
             throw new NullPointerException("Null parent");
-        if (backgroundColor == null)
+        }
+        if (backgroundColor == null) {
             throw new NullPointerException("Null backgroundColor");
-        if (extendedDimX <= 0 || extendedDimY <= 0)
+        }
+        if (extendedDimX <= 0 || extendedDimY <= 0) {
             throw new IllegalArgumentException("Illegal extended dimensions " + extendedDimX + "x" + extendedDimY
                 + " (must be positive)");
-        if (backgroundColor.length == 0)
+        }
+        if (backgroundColor.length == 0) {
             throw new IllegalArgumentException("Empty backgroundColor");
-        if (backgroundColor.length != 1 && backgroundColor.length != 3 && backgroundColor.length != 4)
+        }
+        if (backgroundColor.length != 1 && backgroundColor.length != 3 && backgroundColor.length != 4) {
             throw new IllegalArgumentException("Illegal backgroundColor[" + backgroundColor.length
                 + "]: it must contain 1, 3 or 4 elements");
+        }
         this.parent = parent;
         this.bandCount = Math.max(parent.bandCount(), backgroundColor.length);
         this.backgroundColor = new double[this.bandCount];
@@ -88,16 +93,16 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
         this.compression = parent.compression();
         long lastDimX = this.extendedDimX;
         long lastDimY = this.extendedDimY;
-        this.dimensions.add(new long[]{this.bandCount, lastDimX, lastDimY});
+        this.dimensions.add(new long[] {this.bandCount, lastDimX, lastDimY});
         for (int k = 1, n = parent.numberOfResolutions(); k < n; k++) {
             lastDimX /= this.compression;
             lastDimY /= this.compression;
-            this.dimensions.add(new long[]{this.bandCount, lastDimX, lastDimY});
+            this.dimensions.add(new long[] {this.bandCount, lastDimX, lastDimY});
         }
         if (DEBUG_LEVEL >= 1) {
             final long[] parentDimensions = parent.dimensions(0);
             System.out.printf("ExtendingPlanePyramidSource created on the base of %s: "
-                + "%dx%d, contains sub-image %dx%d at (%d,%d), %d bands, %d levels, compression in %d times%n",
+                    + "%dx%d, contains sub-image %dx%d at (%d,%d), %d bands, %d levels, compression in %d times%n",
                 parent,
                 extendedDimX, extendedDimY,
                 parentDimensions[1], parentDimensions[2],
@@ -142,8 +147,9 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
     }
 
     public int getExtendingBorderWidth() {
-        if (extendingBorderWidth < 0)
+        if (extendingBorderWidth < 0) {
             throw new IllegalArgumentException("Negative extendingBorderWidth");
+        }
         return extendingBorderWidth;
     }
 
@@ -156,8 +162,9 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
     }
 
     public void setExtendingBorderColor(Color extendingBorderColor) {
-        if (extendingBorderColor == null)
+        if (extendingBorderColor == null) {
             throw new NullPointerException("Null extendingBorderColor");
+        }
         this.extendingBorderColor = extendingBorderColor;
     }
 
@@ -202,6 +209,31 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
     }
 
     @Override
+    public List<IRectangularArea> zeroLevelActualRectangles() {
+        List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
+        if (parentRectangles == null) {
+            parentRectangles = AbstractPlanePyramidSource.defaultZeroLevelActualRectangles(parent);
+            if (parentRectangles == null) {
+                return null;
+            }
+            if (DEBUG_LEVEL >= 2) {
+                System.out.printf("Creating default zero-level actual rectangle: %s%n", parentRectangles);
+            }
+        }
+        final List<IRectangularArea> result = new ArrayList<IRectangularArea>(parentRectangles.size());
+        for (IRectangularArea parentRectangle : parentRectangles) {
+            final IRectangularArea shiftedRectangle = parentRectangle.shift(IPoint.valueOf(
+                positionXInExtendedMatrix, positionYInExtendedMatrix));
+            if (DEBUG_LEVEL >= 2) {
+                System.out.printf("Shifting zero-level actual rectangle %s by (%d,%d)%n",
+                    parentRectangle, positionXInExtendedMatrix, positionYInExtendedMatrix);
+            }
+            result.add(shiftedRectangle);
+        }
+        return result;
+    }
+
+    @Override
     public boolean isSpecialMatrixSupported(SpecialImageKind kind) {
         return parent.isSpecialMatrixSupported(kind);
     }
@@ -227,7 +259,7 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
 
     @Override
     protected Matrix<? extends PArray> readLittleSubMatrix(
-            int resolutionLevel, long fromX, long fromY, long toX, long toY)
+        int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException
     {
         checkSubMatrixRanges(resolutionLevel, fromX, fromY, toX, toY, false);
@@ -273,7 +305,7 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
             PlanePyramidTools.fillMatrix(result,
                 partFromX - fromX, partFromY - fromY,
                 partToX - fromX, partToY - fromY,
-                new double[]{1.0, 1.0, 1.0, 1.0});
+                new double[] {1.0, 1.0, 1.0, 1.0});
         }
 
         final long borderedMinX = aMinX - extendingBorderWidth;

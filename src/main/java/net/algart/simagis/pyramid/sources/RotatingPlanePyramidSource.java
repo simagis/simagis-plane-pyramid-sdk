@@ -270,7 +270,7 @@ public final class RotatingPlanePyramidSource
             final IRectangularArea rotatedRectangle = reverseRotation.correctRectangle(
                 rotatedWidth, rotatedHeight, parentRectangle);
             if (DEBUG_LEVEL >= 2) {
-                System.out.printf("Rotating %s by %d degree to %s inside %dx%d%n",
+                System.out.printf("Rotating zero-level actual rectangle %s by %d degree to %s inside %dx%d%n",
                     parentRectangle, rotationMode.rotationInDegrees, rotatedRectangle, rotatedWidth, rotatedHeight);
             }
             result.add(rotatedRectangle);
