@@ -29,21 +29,16 @@ import net.algart.math.IRectangularArea;
 public abstract class LargestRectangle {
 
     final RectangleSet rectangleSet;
-    final int connectedComponentIndex;
 
-    LargestRectangle(RectangleSet rectangleSet, int connectedComponentIndex) {
+    LargestRectangle(RectangleSet rectangleSet) {
         if (rectangleSet == null) {
             throw new NullPointerException("Null rectangleSet");
         }
-        if (connectedComponentIndex < 0 || connectedComponentIndex >= rectangleSet.connectedComponentCount()) {
-            throw new IllegalArgumentException("Illegal connected component index " + connectedComponentIndex);
-        }
         this.rectangleSet = rectangleSet;
-        this.connectedComponentIndex = connectedComponentIndex;
     }
 
-    public LargestRectangle newInstanceWithPossibleHoles(RectangleSet rectangleSet, int connectedComponentIndex) {
-        return new LargestRectangleWithPossibleHoles(rectangleSet, connectedComponentIndex);
+    public LargestRectangle newInstanceWithPossibleHoles(RectangleSet rectangleSet) {
+        return new LargestRectangleWithPossibleHoles(rectangleSet);
     }
 
     public abstract IRectangularArea result();

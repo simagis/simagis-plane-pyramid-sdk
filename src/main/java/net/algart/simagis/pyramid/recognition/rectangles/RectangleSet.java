@@ -188,6 +188,7 @@ public class RectangleSet {
                 break;
             }
             final List<Frame> component = new ArrayList<Frame>();
+            // Breadth-first search:
             queue.add(frames.get(index));
             frameVisited[index] = true;
             while (!queue.isEmpty()) {

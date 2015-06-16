@@ -29,8 +29,8 @@ import net.algart.math.IRectangularArea;
 class LargestRectangleWithPossibleHoles extends LargestRectangle {
     private IRectangularArea result;
 
-    LargestRectangleWithPossibleHoles(RectangleSet rectangleSet, int connectedComponentIndex) {
-        super(rectangleSet, connectedComponentIndex);
+    LargestRectangleWithPossibleHoles(RectangleSet rectangleSet) {
+        super(rectangleSet);
         //TODO!!
     }
 
