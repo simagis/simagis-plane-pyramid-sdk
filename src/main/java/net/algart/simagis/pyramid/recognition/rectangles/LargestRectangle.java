@@ -22,19 +22,33 @@
  * SOFTWARE.
  */
 
-package net.algart.simagis.pyramid.recognition;
+package net.algart.simagis.pyramid.recognition.rectangles;
 
-import java.io.IOException;
+import net.algart.math.IRectangularArea;
 
-public class JoiningRectanglesTest {
-    public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            System.out.println("Usage:");
-            System.out.println("    " + JoiningRectanglesTest.class.getName()
-                + " rectangles-description.json demo-file.png");
-            return;
+public abstract class LargestRectangle {
+
+    final RectangleSet rectangleSet;
+    final int connectedComponentIndex;
+
+    LargestRectangle(RectangleSet rectangleSet, int connectedComponentIndex) {
+        if (rectangleSet == null) {
+            throw new NullPointerException("Null rectangleSet");
         }
-        //TODO!!
-        throw new UnsupportedOperationException();
+        if (connectedComponentIndex < 0 || connectedComponentIndex >= rectangleSet.connectedComponentCount()) {
+            throw new IllegalArgumentException("Illegal connected component index " + connectedComponentIndex);
+        }
+        this.rectangleSet = rectangleSet;
+        this.connectedComponentIndex = connectedComponentIndex;
+    }
+
+    public LargestRectangle newInstanceWithPossibleHoles(RectangleSet rectangleSet, int connectedComponentIndex) {
+        return new LargestRectangleWithPossibleHoles(rectangleSet, connectedComponentIndex);
+    }
+
+    public abstract IRectangularArea result();
+
+    public boolean resultContainsHole() {
+        return false;
     }
 }
