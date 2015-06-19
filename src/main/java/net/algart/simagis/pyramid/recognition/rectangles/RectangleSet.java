@@ -45,6 +45,7 @@ public class RectangleSet {
         private boolean findIncidentFramesFlag = false;
 
         private Frame(IRectangularArea rectangle, int index) {
+            assert rectangle != null;
             this.rectangle = rectangle;
             this.lessHorizontalSide = new RectangleSet.HorizontalSide(this, true);
             this.higherHorizontalSide = new RectangleSet.HorizontalSide(this, false);
@@ -65,8 +66,11 @@ public class RectangleSet {
     public static abstract class Side implements Comparable<Side> {
         final Frame frame;
         final boolean first;
+        final List<BoundedRectangleSet.Link> containedBoundaryLinks =
+            new ArrayList<BoundedRectangleSet.Link>();
 
         private Side(Frame frame, boolean first) {
+            assert frame != null;
             this.frame = frame;
             this.first = first;
         }
@@ -76,70 +80,117 @@ public class RectangleSet {
             return frame;
         }
 
-        public abstract long coord();
+        public boolean isFirstOfTwoParallelSides() {
+            return first;
+        }
+
+        public abstract boolean isHorizontal();
+
+        public abstract long frameSideCoord();
+
+        public long boundCoordPlusHalf() {
+            return first ? frameSideCoord() : frameSideCoord() + 1;
+        }
+
+        public abstract long boundFromPlusHalf();
+
+        public abstract long boundToPlusHalf();
 
         @Override
         public int compareTo(Side o) {
-            final long thisCoord = coord();
-            final long otherCoord = o.coord();
+            final long thisCoord = frameSideCoord();
+            final long otherCoord = o.frameSideCoord();
             return thisCoord < otherCoord ? -1 : thisCoord > otherCoord ? 1 : 0;
         }
     }
 
-    private static class VerticalSide extends Side {
-        private VerticalSide(Frame frame, boolean first) {
-            super(frame, first);
-        }
-
-        @Override
-        public long coord() {
-            return first ? frame.minX : frame.maxX;
-        }
-    }
-
-    private static class HorizontalSide extends Side {
+    static class HorizontalSide extends Side {
         private HorizontalSide(Frame frame, boolean first) {
             super(frame, first);
         }
 
         @Override
-        public long coord() {
+        public boolean isHorizontal() {
+            return true;
+        }
+
+        @Override
+        public long frameSideCoord() {
             return first ? frame.minY : frame.maxY;
+        }
+
+        @Override
+        public long boundFromPlusHalf() {
+            return frame.minX;
+        }
+
+        @Override
+        public long boundToPlusHalf() {
+            return frame.maxX + 1;
+        }
+    }
+
+    static class VerticalSide extends Side {
+        private VerticalSide(Frame frame, boolean first) {
+            super(frame, first);
+        }
+
+        @Override
+        public boolean isHorizontal() {
+            return false;
+        }
+
+        @Override
+        public long frameSideCoord() {
+            return first ? frame.minX : frame.maxX;
+        }
+
+        @Override
+        public long boundFromPlusHalf() {
+            return frame.minY;
+        }
+
+        @Override
+        public long boundToPlusHalf() {
+            return frame.maxY + 1;
         }
     }
 
     private final List<Frame> frames;
     private final List<HorizontalSide> horizontalSides = new ArrayList<HorizontalSide>();
     private final List<VerticalSide> verticalSides = new ArrayList<VerticalSide>();
-    private final List<List<Frame>> connectedComponents = new ArrayList<List<Frame>>();
+    private final List<List<Frame>> framesOfConnectedComponents = new ArrayList<List<Frame>>();
     private final long[] allX;
     private final long[] allY;
     // - allX/allY provides little optimization and simplification
     //TODO!! remove horizontalSides/allY ?
+    private final BoundedRectangleSet[] connectedComponents;
 
-    private RectangleSet(List<Frame> frames, boolean callForExctractingConnectedComponent) {
+    RectangleSet(List<Frame> frames, boolean callForExctractingConnectedComponent) {
         this.frames = frames;
         long t1 = System.nanoTime();
         fillSideLists();
         this.allX = new long[verticalSides.size()];
         for (int k = 0; k < allX.length; k++) {
-            allX[k] = verticalSides.get(k).coord();
+            allX[k] = verticalSides.get(k).frameSideCoord();
         }
         this.allY = new long[horizontalSides.size()];
         for (int k = 0; k < allY.length; k++) {
-            allY[k] = horizontalSides.get(k).coord();
+            allY[k] = horizontalSides.get(k).frameSideCoord();
         }
         long t2 = System.nanoTime();
         if (callForExctractingConnectedComponent) {
-            connectedComponents.add(frames);
+            framesOfConnectedComponents.add(frames);
         } else {
             findConnectedComponents();
         }
+        this.connectedComponents = new BoundedRectangleSet[framesOfConnectedComponents.size()];
+        // - filled by null by Java
         long t3 = System.nanoTime();
         AbstractPlanePyramidSource.debug(2, "%s %d rectangle set into %d connected components: "
             + "%.3f ms preprocess, %.3f ms scanning (%.3f mcs / rectangle)%n",
             callForExctractingConnectedComponent ? "Saving" : "Splitting",
-            frames.size(), connectedComponents.size(),
+            frames.size(), framesOfConnectedComponents.size(),
             (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t3 - t1) * 1e-3 / (double) frames.size() );
     }
 
@@ -152,13 +203,24 @@ public class RectangleSet {
     }
 
     public int connectedComponentCount() {
-        return connectedComponents.size();
+        return framesOfConnectedComponents.size();
     }
 
-    public RectangleSet connectedComponent(int index) {
-        return new RectangleSet(connectedComponents.get(index), true);
+    public BoundedRectangleSet connectedComponent(int index) {
+        BoundedRectangleSet result;
+        synchronized (connectedComponents) {
+            result = connectedComponents[index];
+            if (result != null) {
+                return result;
+            }
+        }
+        result = new BoundedRectangleSet(framesOfConnectedComponents.get(index), true);
         // it is better to recalculate base optimization data like sides for the given component:
         // it will optimize their usage (data from other components will not be used)
+        synchronized (connectedComponents) {
+            connectedComponents[index] = result;
+            return result;
+        }
     }
 
     private void fillSideLists() {
@@ -202,7 +264,7 @@ public class RectangleSet {
                     }
                 }
             }
-            this.connectedComponents.add(component);
+            this.framesOfConnectedComponents.add(component);
         }
     }
 
