@@ -26,10 +26,10 @@ package net.algart.simagis.pyramid.recognition.rectangles;
 
 import net.algart.math.IRectangularArea;
 
-class LargestRectangleWithPossibleHoles extends LargestRectangle {
+class LargestRectangleSimpleAlgorithm extends LargestRectangle {
     private IRectangularArea result;
 
-    LargestRectangleWithPossibleHoles(RectangleSet rectangleSet) {
+    LargestRectangleSimpleAlgorithm(RectangleSet rectangleSet) {
         super(rectangleSet);
         //TODO!!
     }

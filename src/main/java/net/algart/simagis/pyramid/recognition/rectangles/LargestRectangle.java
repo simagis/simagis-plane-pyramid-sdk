@@ -37,8 +37,8 @@ public abstract class LargestRectangle {
         this.rectangleSet = rectangleSet;
     }
 
-    public LargestRectangle newInstanceWithPossibleHoles(RectangleSet rectangleSet) {
-        return new LargestRectangleWithPossibleHoles(rectangleSet);
+    public LargestRectangle newSimpleAlgorithmInstance(RectangleSet rectangleSet) {
+        return new LargestRectangleSimpleAlgorithm(rectangleSet);
     }
 
     public abstract IRectangularArea result();

@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class RectangleSetTest {
     public static void main(String[] args) throws IOException, JSONException {
@@ -56,43 +57,82 @@ public class RectangleSetTest {
         final long height = Long.parseLong(args[3]);
         final double coordinateDivider = Double.parseDouble(args[4]);
         final File demoFolder = new File(args[5]);
+        final Random random = new Random(157);
         demoFolder.mkdirs();
         final JSONObject rectanglesJson = new JSONObject(ExternalProcessor.readUTF8(rectanglesFile));
         final JSONArray rectanglesArray = rectanglesJson.has("origins") ?
-            rectanglesJson.getJSONArray("origins") :
-            rectanglesJson.getJSONArray("rectangles");
+            rectanglesJson.optJSONArray("origins") :
+            rectanglesJson.optJSONArray("rectangles");
+        final String algorithm = rectanglesJson.optString("algorithm", null);
         final List<IRectangularArea> rectangles = new ArrayList<IRectangularArea>();
-        for (int k = 0, n = rectanglesArray.length(); k < n; k++) {
-            final JSONObject rectangleJson = rectanglesArray.getJSONObject(k);
-            rectangles.add(IRectangularArea.valueOf(
-                IPoint.valueOf(
-                    Math.round(rectangleJson.getInt("minX") / coordinateDivider),
-                    Math.round(rectangleJson.getInt("minY") / coordinateDivider)),
-                IPoint.valueOf(
-                    Math.round(rectangleJson.getInt("maxX") / coordinateDivider),
-                    Math.round(rectangleJson.getInt("maxY") / coordinateDivider))));
+        if (rectanglesArray != null) {
+            System.out.println("Reading rectangles...");
+            for (int k = 0, n = rectanglesArray.length(); k < n; k++) {
+                final JSONObject rectangleJson = rectanglesArray.getJSONObject(k);
+                rectangles.add(IRectangularArea.valueOf(
+                    IPoint.valueOf(
+                        rectangleJson.getInt("minX"),
+                        rectangleJson.getInt("minY")),
+                    IPoint.valueOf(
+                        rectangleJson.getInt("maxX"),
+                        rectangleJson.getInt("maxY"))));
+            }
+        } else if (algorithm != null) {
+            System.out.println("Creating rectangles...");
+            if (algorithm.equals("regular")) {
+                final int frameWidth = rectanglesJson.getInt("frameWidth");
+                final int frameHeight = rectanglesJson.getInt("frameHeight");
+                final int horizontalCount = rectanglesJson.getInt("horizontalCount");
+                final int verticalCount = rectanglesJson.getInt("verticalCount");
+                final int overlap = rectanglesJson.getInt("overlap");
+                final int maxError = rectanglesJson.getInt("maxError");
+                final Random rnd = new Random(rectanglesJson.optLong("randSeen", new Random().nextLong()));
+                for (int i = 0; i < horizontalCount; i++) {
+                    for (int j = 0; j < verticalCount; j++) {
+                        final long x = j * (frameWidth - overlap) + rnd.nextInt(maxError) - maxError / 2;
+                        final long y = i * (frameHeight - overlap) + rnd.nextInt(maxError) - maxError / 2;
+                        rectangles.add(IRectangularArea.valueOf(
+                            IPoint.valueOf(x, y),
+                            IPoint.valueOf(x + frameWidth - 1, y + frameHeight - 1)));
+                    }
+                }
+            } else {
+                throw new JSONException("Unknown generating algorithm " + algorithm);
+            }
+        } else {
+            throw new JSONException("JSON file \"" + rectanglesFile
+                + "\" must contain either the list of rectangles or description of the generating algorithm");
         }
+        System.out.println("Writing source image...");
         Matrix<? extends UpdatablePArray> demo = Arrays.SMM.newByteMatrix(width, height);
         for (IRectangularArea area : rectangles) {
-            demo.subMatrix(area, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(200);
+            demo.subMatrix(divide(area, coordinateDivider),
+                Matrix.ContinuationMode.NULL_CONSTANT).array().fill(100 + random.nextInt(100));
         }
         ExternalAlgorithmCaller.writeImage(
-            new File(demoFolder, rectanglesFile.getName() + ".source.png"),
+            new File(demoFolder, rectanglesFile.getName() + ".source.bmp"),
             Collections.singletonList(demo));
         RectangleSet rectangleSet = null;
         for (int testIndex = 0; testIndex < numberOfTests; testIndex++) {
             System.out.printf("Test #%d%n", testIndex);
             rectangleSet = RectangleSet.newInstance(rectangles);
         }
-        for (int k = 0; k < rectangleSet.connectedComponentCount(); k++) {
+        for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
             demo = Arrays.SMM.newByteMatrix(width, height);
             final RectangleSet connectedSet = rectangleSet.connectedComponent(k);
             for (RectangleSet.Frame frame : connectedSet.frames()) {
-                demo.subMatrix(frame.rectangle(), Matrix.ContinuationMode.NULL_CONSTANT).array().fill(255);
+                demo.subMatrix(divide(frame.rectangle(), coordinateDivider),
+                    Matrix.ContinuationMode.NULL_CONSTANT).array().fill(100 + random.nextInt(100));
             }
             ExternalAlgorithmCaller.writeImage(
-                new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".png"),
+                new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp"),
                 Collections.singletonList(demo));
         }
+    }
+
+    private static IRectangularArea divide(IRectangularArea area, double coordinateDivider) {
+        return IRectangularArea.valueOf(
+            area.min().multiply(1.0 / coordinateDivider),
+            area.max().multiply(1.0 / coordinateDivider));
     }
 }

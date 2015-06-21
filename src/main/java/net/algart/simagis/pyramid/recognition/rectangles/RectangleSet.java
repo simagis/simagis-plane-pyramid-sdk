@@ -160,24 +160,12 @@ public class RectangleSet {
     private final List<HorizontalSide> horizontalSides = new ArrayList<HorizontalSide>();
     private final List<VerticalSide> verticalSides = new ArrayList<VerticalSide>();
     private final List<List<Frame>> framesOfConnectedComponents = new ArrayList<List<Frame>>();
-    private final long[] allX;
-    private final long[] allY;
-    // - allX/allY provides little optimization and simplification
-    //TODO!! remove horizontalSides/allY ?
     private final BoundedRectangleSet[] connectedComponents;
 
     RectangleSet(List<Frame> frames, boolean callForExctractingConnectedComponent) {
         this.frames = frames;
         long t1 = System.nanoTime();
         fillSideLists();
-        this.allX = new long[verticalSides.size()];
-        for (int k = 0; k < allX.length; k++) {
-            allX[k] = verticalSides.get(k).frameSideCoord();
-        }
-        this.allY = new long[horizontalSides.size()];
-        for (int k = 0; k < allY.length; k++) {
-            allY[k] = horizontalSides.get(k).frameSideCoord();
-        }
         long t2 = System.nanoTime();
         if (callForExctractingConnectedComponent) {
             framesOfConnectedComponents.add(frames);
@@ -187,9 +175,9 @@ public class RectangleSet {
         this.connectedComponents = new BoundedRectangleSet[framesOfConnectedComponents.size()];
         // - filled by null by Java
         long t3 = System.nanoTime();
-        AbstractPlanePyramidSource.debug(2, "%s %d rectangle set into %d connected components: "
+        AbstractPlanePyramidSource.debug(2, "%s rectangle set (%d rectangles) into %d connected components: "
             + "%.3f ms preprocess, %.3f ms scanning (%.3f mcs / rectangle)%n",
-            callForExctractingConnectedComponent ? "Saving" : "Splitting",
+            callForExctractingConnectedComponent ? "Making" : "Splitting",
             frames.size(), framesOfConnectedComponents.size(),
             (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t3 - t1) * 1e-3 / (double) frames.size() );
     }
@@ -238,7 +226,12 @@ public class RectangleSet {
         if (frames.isEmpty()) {
             return;
         }
+        final long[] allX = new long[verticalSides.size()];
+        for (int k = 0; k < allX.length; k++) {
+            allX[k] = verticalSides.get(k).frameSideCoord();
+        }
         final boolean[] frameVisited = new boolean[frames.size()];
+        // - filled by false by Java
         final Queue<Frame> queue = new LinkedList<Frame>();
         final List<Frame> neighbours = new ArrayList<Frame>();
         int index = 0;
@@ -256,7 +249,7 @@ public class RectangleSet {
             while (!queue.isEmpty()) {
                 final Frame frame = queue.poll();
                 component.add(frame);
-                findIncidentFrames(frame, neighbours);
+                findIncidentFrames(neighbours, frame, allX);
                 for (Frame neighbour : neighbours) {
                     if (!frameVisited[neighbour.index]) {
                         queue.add(neighbour);
@@ -268,7 +261,7 @@ public class RectangleSet {
         }
     }
 
-    private void findIncidentFrames(Frame frame, List<Frame> result) {
+    private void findIncidentFrames(List<Frame> result, Frame frame, long[] allX) {
         result.clear();
         int left = Arrays.binarySearch(allX, frame.minX);
         assert left >= 0;

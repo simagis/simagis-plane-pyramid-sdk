@@ -134,6 +134,8 @@ public class BoundedRectangleSet extends RectangleSet {
         }
     }
 
+
+
     BoundedRectangleSet(List<Frame> frames, boolean callForExctractingConnectedComponent) {
         super(frames, callForExctractingConnectedComponent);
         buildBounrady();
