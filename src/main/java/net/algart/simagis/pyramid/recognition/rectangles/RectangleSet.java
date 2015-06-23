@@ -270,6 +270,8 @@ public class RectangleSet {
     private volatile List<HorizontalSide> horizontalSides = null;
     private volatile List<VerticalSide> verticalSides = null;
     private volatile List<List<Frame>> connectedComponents = null;
+    private volatile List<HorizontalSide> horizontalSidesAtBoundary = null;
+    private volatile List<VerticalSide> verticalSidesAtBoundary = null;
     private volatile List<List<BoundaryLink>> allBoundaries = null;
     private final Object lock = new Object();
 
@@ -355,12 +357,24 @@ public class RectangleSet {
             doJoinBoundaries(containedBoundaryLinksForHorizontalSides, containedBoundaryLinksForVerticalSides);
         long t5 = System.nanoTime();
         synchronized (lock) {
+            List<HorizontalSide> horizontalSidesAtBoundary = new ArrayList<HorizontalSide>();
             for (int k = 0, n = horizontalSides.size(); k < n; k++) {
-                horizontalSides.get(k).containedBoundaryLinks = containedBoundaryLinksForHorizontalSides.get(k);
+                final HorizontalSide side = horizontalSides.get(k);
+                side.containedBoundaryLinks = containedBoundaryLinksForHorizontalSides.get(k);
+                if (!side.containedBoundaryLinks.isEmpty()) {
+                    horizontalSidesAtBoundary.add(side);
+                }
             }
+            List<VerticalSide> verticalSidesAtBoundary = new ArrayList<VerticalSide>();
             for (int k = 0, n = verticalSides.size(); k < n; k++) {
-                verticalSides.get(k).containedBoundaryLinks = containedBoundaryLinksForVerticalSides.get(k);
+                final VerticalSide side = verticalSides.get(k);
+                side.containedBoundaryLinks = containedBoundaryLinksForVerticalSides.get(k);
+                if (!side.containedBoundaryLinks.isEmpty()) {
+                    verticalSidesAtBoundary.add(side);
+                }
             }
+            this.horizontalSidesAtBoundary = horizontalSidesAtBoundary;
+            this.verticalSidesAtBoundary = verticalSidesAtBoundary;
             this.allBoundaries = result;
         }
         long t6 = System.nanoTime();
