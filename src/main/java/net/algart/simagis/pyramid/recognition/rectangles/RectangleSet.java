@@ -37,10 +37,10 @@ public class RectangleSet {
         private final RectangleSet.HorizontalSide higherHorizontalSide;
         private final RectangleSet.VerticalSide lessVerticalSide;
         private final RectangleSet.VerticalSide higherVerticalSide;
-        private final long minX;
-        private final long maxX;
-        private final long minY;
-        private final long maxY;
+        private final long fromX;
+        private final long toX;
+        private final long fromY;
+        private final long toY;
         private final int index;
 
         private Frame(IRectangularArea rectangle, int index) {
@@ -50,10 +50,10 @@ public class RectangleSet {
             this.higherHorizontalSide = new RectangleSet.HorizontalSide(this, false);
             this.lessVerticalSide = new RectangleSet.VerticalSide(this, true);
             this.higherVerticalSide = new RectangleSet.VerticalSide(this, false);
-            this.minX = rectangle.min(0);
-            this.maxX = rectangle.max(0);
-            this.minY = rectangle.min(1);
-            this.maxY = rectangle.max(1);
+            this.fromX = rectangle.min(0);
+            this.toX = rectangle.max(0) + 1;
+            this.fromY = rectangle.min(1);
+            this.toY = rectangle.max(1) + 1;
             this.index = index;
         }
 
@@ -87,9 +87,7 @@ public class RectangleSet {
 
         public abstract long frameSideCoord();
 
-        public long boundCoordPlusHalf() {
-            return first ? frameSideCoord() : frameSideCoord() + 1;
-        }
+        public abstract long boundCoordPlusHalf();
 
         public abstract long boundFromPlusHalf();
 
@@ -97,8 +95,8 @@ public class RectangleSet {
 
         @Override
         public int compareTo(Side o) {
-            final long thisCoord = frameSideCoord();
-            final long otherCoord = o.frameSideCoord();
+            final long thisCoord = boundCoordPlusHalf();
+            final long otherCoord = o.boundCoordPlusHalf();
             return thisCoord < otherCoord ? -1 : thisCoord > otherCoord ? 1 : 0;
         }
     }
@@ -115,17 +113,22 @@ public class RectangleSet {
 
         @Override
         public long frameSideCoord() {
-            return first ? frame.minY : frame.maxY;
+            return first ? frame.fromY : frame.toY - 1;
+        }
+
+        @Override
+        public long boundCoordPlusHalf() {
+            return first ? frame.fromY : frame.toY;
         }
 
         @Override
         public long boundFromPlusHalf() {
-            return frame.minX;
+            return frame.fromX;
         }
 
         @Override
         public long boundToPlusHalf() {
-            return frame.maxX + 1;
+            return frame.toX;
         }
     }
 
@@ -141,17 +144,22 @@ public class RectangleSet {
 
         @Override
         public long frameSideCoord() {
-            return first ? frame.minX : frame.maxX;
+            return first ? frame.fromX : frame.toX - 1;
+        }
+
+        @Override
+        public long boundCoordPlusHalf() {
+            return first ? frame.fromX : frame.toX;
         }
 
         @Override
         public long boundFromPlusHalf() {
-            return frame.minY;
+            return frame.fromY;
         }
 
         @Override
         public long boundToPlusHalf() {
-            return frame.maxY + 1;
+            return frame.toY;
         }
     }
 
@@ -354,7 +362,7 @@ public class RectangleSet {
         final List<List<Frame>> result = new ArrayList<List<Frame>>();
         final long[] allX = new long[verticalSides.size()];
         for (int k = 0; k < allX.length; k++) {
-            allX[k] = verticalSides.get(k).frameSideCoord();
+            allX[k] = verticalSides.get(k).boundCoordPlusHalf();
         }
         final boolean[] frameVisited = new boolean[frames.size()];
         final boolean[] added = new boolean[frames.size()];
@@ -391,24 +399,24 @@ public class RectangleSet {
 
     private void findIncidentFrames(List<Frame> result, Frame frame, long[] allX, boolean added[]) {
         result.clear();
-        int left = Arrays.binarySearch(allX, frame.minX);
+        int left = Arrays.binarySearch(allX, frame.fromX);
         assert left >= 0;
         // - we should find at least this frame itself
-        assert allX[left] == frame.minX;
-        while (left > 0 && allX[left - 1] == frame.minX) {
+        assert allX[left] == frame.fromX;
+        while (left > 0 && allX[left - 1] == frame.fromX) {
             left--;
         }
-        int right = Arrays.binarySearch(allX, frame.maxX);
+        int right = Arrays.binarySearch(allX, frame.toX);
         assert right >= 0;
         // - we should find at least this frame itself
-        assert allX[right] == frame.maxX;
-        while (right + 1 < allX.length && allX[right + 1] == frame.maxX) {
+        assert allX[right] == frame.toX;
+        while (right + 1 < allX.length && allX[right + 1] == frame.toX) {
             right++;
         }
         for (int k = left; k <= right; k++) {
             final Frame other = verticalSides.get(k).frame;
-            assert other.maxX >= frame.minX && other.minX <= frame.maxX : "Binary search in allX failed";
-            if (other.maxY < frame.minY || other.minY > frame.maxY) {
+            assert other.toX >= frame.fromX && other.fromX <= frame.toX : "Binary search in allX failed";
+            if (other.toY < frame.fromY || other.fromY > frame.toY) {
                 continue;
             }
             if (other == frame) {
