@@ -86,7 +86,7 @@ public class RectangleSetTest {
                 final int verticalCount = rectanglesJson.getInt("verticalCount");
                 final int overlap = rectanglesJson.getInt("overlap");
                 final int maxError = rectanglesJson.getInt("maxError");
-                final Random rnd = new Random(rectanglesJson.optLong("randSeen", new Random().nextLong()));
+                final Random rnd = new Random(rectanglesJson.optLong("randSeed", new Random().nextLong()));
                 for (int i = 0; i < horizontalCount; i++) {
                     for (int j = 0; j < verticalCount; j++) {
                         final long x = j * (frameWidth - overlap) + rnd.nextInt(maxError) - maxError / 2;
@@ -103,19 +103,23 @@ public class RectangleSetTest {
             throw new JSONException("JSON file \"" + rectanglesFile
                 + "\" must contain either the list of rectangles or description of the generating algorithm");
         }
-        System.out.println("Writing source image...");
         Matrix<? extends UpdatablePArray> demo = Arrays.SMM.newByteMatrix(width, height);
         for (IRectangularArea area : rectangles) {
             demo.subMatrix(divide(area, coordinateDivider),
                 Matrix.ContinuationMode.NULL_CONSTANT).array().fill(100 + random.nextInt(100));
         }
-        ExternalAlgorithmCaller.writeImage(
-            new File(demoFolder, rectanglesFile.getName() + ".source.bmp"),
-            Collections.singletonList(demo));
+        final File sourceFile = new File(demoFolder, rectanglesFile.getName() + ".source.bmp");
+        System.out.printf("Writing source image into %s: %d rectangles%n", sourceFile, rectangles.size());
+        ExternalAlgorithmCaller.writeImage(sourceFile, Collections.singletonList(demo));
+
         RectangleSet rectangleSet = null;
         for (int testIndex = 0; testIndex < numberOfTests; testIndex++) {
             System.out.printf("Test #%d%n", testIndex);
             rectangleSet = RectangleSet.newInstance(rectangles);
+            rectangleSet.findConnectedComponents();
+        }
+        if (rectangleSet == null) {
+            throw new IllegalArgumentException("Zero or negative number of tests");
         }
         for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
             demo = Arrays.SMM.newByteMatrix(width, height);
@@ -124,9 +128,9 @@ public class RectangleSetTest {
                 demo.subMatrix(divide(frame.rectangle(), coordinateDivider),
                     Matrix.ContinuationMode.NULL_CONSTANT).array().fill(100 + random.nextInt(100));
             }
-            ExternalAlgorithmCaller.writeImage(
-                new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp"),
-                Collections.singletonList(demo));
+            final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp");
+            System.out.printf("Writing component #%d into %s: %s%n", k + 1, f, connectedSet);
+            ExternalAlgorithmCaller.writeImage(f, Collections.singletonList(demo));
         }
     }
 

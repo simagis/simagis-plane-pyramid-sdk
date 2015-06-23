@@ -24,6 +24,7 @@
 
 package net.algart.simagis.pyramid.recognition.rectangles;
 
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
 
@@ -41,8 +42,6 @@ public class RectangleSet {
         private final long minY;
         private final long maxY;
         private final int index;
-
-        private boolean findIncidentFramesFlag = false;
 
         private Frame(IRectangularArea rectangle, int index) {
             assert rectangle != null;
@@ -66,8 +65,8 @@ public class RectangleSet {
     public static abstract class Side implements Comparable<Side> {
         final Frame frame;
         final boolean first;
-        final List<BoundedRectangleSet.Link> containedBoundaryLinks =
-            new ArrayList<BoundedRectangleSet.Link>();
+        final List<BoundaryLink> containedBoundaryLinks =
+            new ArrayList<BoundaryLink>();
 
         private Side(Frame frame, boolean first) {
             assert frame != null;
@@ -156,62 +155,184 @@ public class RectangleSet {
         }
     }
 
-    private final List<Frame> frames;
-    private final List<HorizontalSide> horizontalSides = new ArrayList<HorizontalSide>();
-    private final List<VerticalSide> verticalSides = new ArrayList<VerticalSide>();
-    private final List<List<Frame>> framesOfConnectedComponents = new ArrayList<List<Frame>>();
-    private final BoundedRectangleSet[] connectedComponents;
+    public static abstract class BoundaryLink {
+        final Side containingSide;
+        final Side firstTransveralSide;
+        final Side secondTransveralSide;
+        final long from;
+        final long to;
 
-    RectangleSet(List<Frame> frames, boolean callForExctractingConnectedComponent) {
-        this.frames = frames;
-        long t1 = System.nanoTime();
-        fillSideLists();
-        long t2 = System.nanoTime();
-        if (callForExctractingConnectedComponent) {
-            framesOfConnectedComponents.add(frames);
-        } else {
-            findConnectedComponents();
+        private BoundaryLink(
+            Side containingSide,
+            Side firstTransveralSide,
+            Side secondTransveralSide,
+            long from,
+            long to)
+        {
+            assert containingSide != null && firstTransveralSide != null && secondTransveralSide != null;
+            assert from >= containingSide.boundFromPlusHalf();
+            assert to <= containingSide.boundToPlusHalf();
+            assert from < to;
+            this.containingSide = containingSide;
+            this.firstTransveralSide = firstTransveralSide;
+            this.secondTransveralSide = secondTransveralSide;
+            this.from = from;
+            this.to = to;
+            containingSide.containedBoundaryLinks.add(this);
         }
-        this.connectedComponents = new BoundedRectangleSet[framesOfConnectedComponents.size()];
-        // - filled by null by Java
-        long t3 = System.nanoTime();
-        AbstractPlanePyramidSource.debug(2, "%s rectangle set (%d rectangles) into %d connected components: "
-            + "%.3f ms preprocess, %.3f ms scanning (%.3f mcs / rectangle)%n",
-            callForExctractingConnectedComponent ? "Making" : "Splitting",
-            frames.size(), framesOfConnectedComponents.size(),
-            (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t3 - t1) * 1e-3 / (double) frames.size() );
+
+        public Side containingSide() {
+            return containingSide;
+        }
+
+        /**
+         * Returns the starting coordinate of this boundary element (link) along the coordinate axis,
+         * to which this link is parallel, increased by 0.5
+         * (the bounrady always has half-integer coordinates).
+         *
+         * @return the starting coordinate of this link + 0.5
+         */
+        public long from() {
+            return from;
+        }
+
+        /**
+         * Returns the ending coordinate of this boundary element (link) along the coordinate axis,
+         * to which this link is parallel, increased by 0.5
+         * (the bounrady always has half-integer coordinates).
+         *
+         * @return the ending coordinate of this link + 0.5
+         */
+        public long to() {
+            return to;
+        }
+
+        /**
+         * Returns the coordinate of this boundary element (link) along the coordinate axis,
+         * to which this link is perpendicular, increased by 0.5
+         * (the bounrady always has half-integer coordinates).
+         *
+         * @return the perpendicular coordinate of this link + 0.5
+         */
+        public long transversal() {
+            return containingSide.boundCoordPlusHalf();
+        }
+
+        public abstract IRectangularArea sidePart();
+    }
+
+    public static class HorizontalBoundaryLink extends BoundaryLink {
+        private HorizontalBoundaryLink(
+            HorizontalSide containedSide,
+            VerticalSide firstTransveralSide,
+            VerticalSide secondTransveralSide,
+            long from,
+            long to)
+        {
+            super(containedSide, firstTransveralSide, secondTransveralSide, from, to);
+        }
+
+        @Override
+        public IRectangularArea sidePart() {
+            return IRectangularArea.valueOf(
+                IPoint.valueOf(from, containingSide.frameSideCoord()),
+                IPoint.valueOf(to - 1, containingSide.frameSideCoord()));
+        }
+    }
+
+    public static class VerticalBoundaryLink extends BoundaryLink {
+        private VerticalBoundaryLink(
+            VerticalSide containedSide,
+            HorizontalSide firstTransveralSide,
+            HorizontalSide secondTransveralSide,
+            long from,
+            long to) {
+            super(containedSide, firstTransveralSide, secondTransveralSide, from, to);
+        }
+
+        @Override
+        public IRectangularArea sidePart() {
+            return IRectangularArea.valueOf(
+                IPoint.valueOf(containingSide.frameSideCoord(), from),
+                IPoint.valueOf(containingSide.frameSideCoord(), to - 1));
+        }
+    }
+
+
+    private final List<Frame> frames;
+
+    private volatile List<HorizontalSide> horizontalSides = null;
+    private volatile List<VerticalSide> verticalSides = null;
+    private volatile List<List<Frame>> connectedComponents = null;
+    private final Object lock = new Object();
+
+    RectangleSet(List<Frame> frames) {
+        this.frames = frames;
     }
 
     public static RectangleSet newInstance(Collection<IRectangularArea> rectangles) {
-        return new RectangleSet(checkAndConvertToFrames(rectangles), false);
+        return new RectangleSet(checkAndConvertToFrames(rectangles));
     }
 
     public List<Frame> frames() {
         return Collections.unmodifiableList(frames);
     }
 
+
     public int connectedComponentCount() {
-        return framesOfConnectedComponents.size();
+        findConnectedComponents();
+        synchronized (lock) {
+            return connectedComponents.size();
+        }
     }
 
-    public BoundedRectangleSet connectedComponent(int index) {
-        BoundedRectangleSet result;
-        synchronized (connectedComponents) {
-            result = connectedComponents[index];
-            if (result != null) {
-                return result;
+    public RectangleSet connectedComponent(int index) {
+        findConnectedComponents();
+        final List<Frame> resultFrames;
+        synchronized (lock) {
+            resultFrames = connectedComponents.get(index);
+        }
+        final RectangleSet result = new RectangleSet(resultFrames);
+        result.connectedComponents = Collections.singletonList(resultFrames);
+        return result;
+    }
+
+    public void findConnectedComponents() {
+        fillSideLists();
+        synchronized (lock) {
+            if (this.connectedComponents != null) {
+                return;
             }
         }
-        result = new BoundedRectangleSet(framesOfConnectedComponents.get(index), true);
-        // it is better to recalculate base optimization data like sides for the given component:
-        // it will optimize their usage (data from other components will not be used)
-        synchronized (connectedComponents) {
-            connectedComponents[index] = result;
-            return result;
+        long t1 = System.nanoTime();
+        List<List<Frame>> connectedComponents = doFindConnectedComponents();
+        long t2 = System.nanoTime();
+        synchronized (lock) {
+            this.connectedComponents = connectedComponents;
+        }
+        AbstractPlanePyramidSource.debug(2, "Rectangle set (%d rectangles), finding %d connected components: "
+                + "%.3f ms (%.3f mcs / rectangle)%n",
+            frames.size(), connectedComponents.size(),
+            (t2 - t1) * 1e-6, (t2 - t1) * 1e-3 / (double) frames.size());
+    }
+
+    @Override
+    public String toString() {
+        synchronized (lock) {
+            return "set of " + frames.size() + " rectangles"
+                + (connectedComponents == null ? "" : ", " + connectedComponents.size() + " connected components");
         }
     }
 
     private void fillSideLists() {
+        synchronized (lock) {
+            if (this.horizontalSides != null) {
+                return;
+            }
+        }
+        long t1 = System.nanoTime();
+        final List<HorizontalSide> horizontalSides = new ArrayList<HorizontalSide>();
+        final List<VerticalSide> verticalSides = new ArrayList<VerticalSide>();
         for (Frame frame : frames) {
             horizontalSides.add(frame.lessHorizontalSide);
             horizontalSides.add(frame.higherHorizontalSide);
@@ -220,22 +341,28 @@ public class RectangleSet {
         }
         Collections.sort(horizontalSides);
         Collections.sort(verticalSides);
+        long t2 = System.nanoTime();
+        synchronized (lock) {
+            this.horizontalSides = horizontalSides;
+            this.verticalSides = verticalSides;
+        }
+        AbstractPlanePyramidSource.debug(2, "Rectangle set (%d rectangles), sorting sides: %.3f ms%n",
+            frames.size(), (t2 - t1) * 1e-6);
     }
 
-    private void findConnectedComponents() {
-        if (frames.isEmpty()) {
-            return;
-        }
+    private List<List<Frame>> doFindConnectedComponents() {
+        final List<List<Frame>> result = new ArrayList<List<Frame>>();
         final long[] allX = new long[verticalSides.size()];
         for (int k = 0; k < allX.length; k++) {
             allX[k] = verticalSides.get(k).frameSideCoord();
         }
         final boolean[] frameVisited = new boolean[frames.size()];
-        // - filled by false by Java
+        final boolean[] added = new boolean[frames.size()];
+        // - arrays are filled by false by Java
         final Queue<Frame> queue = new LinkedList<Frame>();
         final List<Frame> neighbours = new ArrayList<Frame>();
         int index = 0;
-        for (;;) {
+        for (; ; ) {
             while (index < frameVisited.length && frameVisited[index]) {
                 index++;
             }
@@ -249,7 +376,7 @@ public class RectangleSet {
             while (!queue.isEmpty()) {
                 final Frame frame = queue.poll();
                 component.add(frame);
-                findIncidentFrames(neighbours, frame, allX);
+                findIncidentFrames(neighbours, frame, allX, added);
                 for (Frame neighbour : neighbours) {
                     if (!frameVisited[neighbour.index]) {
                         queue.add(neighbour);
@@ -257,11 +384,12 @@ public class RectangleSet {
                     }
                 }
             }
-            this.framesOfConnectedComponents.add(component);
+            result.add(component);
         }
+        return result;
     }
 
-    private void findIncidentFrames(List<Frame> result, Frame frame, long[] allX) {
+    private void findIncidentFrames(List<Frame> result, Frame frame, long[] allX, boolean added[]) {
         result.clear();
         int left = Arrays.binarySearch(allX, frame.minX);
         assert left >= 0;
@@ -287,14 +415,14 @@ public class RectangleSet {
                 continue;
             }
             // they intersects!
-            if (!other.findIncidentFramesFlag) {
+            if (!added[other.index]) {
                 result.add(other);
-                other.findIncidentFramesFlag = true;
-                // the flag is necessary to avoid adding twice
+                added[other.index] = true;
+                // this flag is necessary to avoid adding twice (for left and right sides)
             }
         }
         for (Frame other : result) {
-            other.findIncidentFramesFlag = false;
+            added[other.index] = false;
         }
     }
 
