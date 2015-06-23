@@ -32,11 +32,11 @@ import java.util.*;
 
 public class RectangleSet {
     public static class Frame {
+        final RectangleSet.HorizontalSide lessHorizontalSide;
+        final RectangleSet.HorizontalSide higherHorizontalSide;
+        final RectangleSet.VerticalSide lessVerticalSide;
+        final RectangleSet.VerticalSide higherVerticalSide;
         private final IRectangularArea rectangle;
-        private final RectangleSet.HorizontalSide lessHorizontalSide;
-        private final RectangleSet.HorizontalSide higherHorizontalSide;
-        private final RectangleSet.VerticalSide lessVerticalSide;
-        private final RectangleSet.VerticalSide higherVerticalSide;
         private final long fromX;
         private final long toX;
         private final long fromY;
@@ -65,8 +65,7 @@ public class RectangleSet {
     public static abstract class Side implements Comparable<Side> {
         final Frame frame;
         final boolean first;
-        final List<BoundaryLink> containedBoundaryLinks =
-            new ArrayList<BoundaryLink>();
+        List<BoundaryLink> containedBoundaryLinks = null;
 
         private Side(Frame frame, boolean first) {
             assert frame != null;
@@ -186,7 +185,6 @@ public class RectangleSet {
             this.secondTransveralSide = secondTransveralSide;
             this.from = from;
             this.to = to;
-            containingSide.containedBoundaryLinks.add(this);
         }
 
         public Side containingSide() {
@@ -272,6 +270,7 @@ public class RectangleSet {
     private volatile List<HorizontalSide> horizontalSides = null;
     private volatile List<VerticalSide> verticalSides = null;
     private volatile List<List<Frame>> connectedComponents = null;
+    private volatile List<List<BoundaryLink>> allBoundaries = null;
     private final Object lock = new Object();
 
     RectangleSet(List<Frame> frames) {
@@ -313,15 +312,69 @@ public class RectangleSet {
             }
         }
         long t1 = System.nanoTime();
-        List<List<Frame>> connectedComponents = doFindConnectedComponents();
+        final List<List<Frame>> result = new ArrayList<List<Frame>>();
+        if (!frames.isEmpty()) {
+            doFindConnectedComponents(result);
+        }
         long t2 = System.nanoTime();
         synchronized (lock) {
-            this.connectedComponents = connectedComponents;
+            this.connectedComponents = result;
         }
         AbstractPlanePyramidSource.debug(2, "Rectangle set (%d rectangles), finding %d connected components: "
                 + "%.3f ms (%.3f mcs / rectangle)%n",
-            frames.size(), connectedComponents.size(),
+            frames.size(), result.size(),
             (t2 - t1) * 1e-6, (t2 - t1) * 1e-3 / (double) frames.size());
+    }
+
+    public void findBoundaries() {
+        fillSideLists();
+        synchronized (lock) {
+            if (this.allBoundaries != null) {
+                return;
+            }
+            if (frames.isEmpty()) {
+                this.allBoundaries = new ArrayList<List<BoundaryLink>>();
+                return;
+            }
+        }
+        long t1 = System.nanoTime();
+        final List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides = new ArrayList<List<BoundaryLink>>();
+        for (int k = 0, n = horizontalSides.size(); k < n; k++) {
+            containedBoundaryLinksForHorizontalSides.add(new ArrayList<BoundaryLink>());
+        }
+        final List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides= new ArrayList<List<BoundaryLink>>();
+        for (int k = 0, n = verticalSides.size(); k < n; k++) {
+            containedBoundaryLinksForVerticalSides.add(new ArrayList<BoundaryLink>());
+        }
+        long t2 = System.nanoTime();
+        doFindHorizontalBoundaries(containedBoundaryLinksForHorizontalSides);
+        long t3 = System.nanoTime();
+        doFindVerticalBoundaries(containedBoundaryLinksForHorizontalSides, containedBoundaryLinksForVerticalSides);
+        long t4 = System.nanoTime();
+        final List<List<BoundaryLink>> result =
+            doJoinBoundaries(containedBoundaryLinksForHorizontalSides, containedBoundaryLinksForVerticalSides);
+        long t5 = System.nanoTime();
+        synchronized (lock) {
+            for (int k = 0, n = horizontalSides.size(); k < n; k++) {
+                horizontalSides.get(k).containedBoundaryLinks = containedBoundaryLinksForHorizontalSides.get(k);
+            }
+            for (int k = 0, n = verticalSides.size(); k < n; k++) {
+                verticalSides.get(k).containedBoundaryLinks = containedBoundaryLinksForVerticalSides.get(k);
+            }
+            this.allBoundaries = result;
+        }
+        long t6 = System.nanoTime();
+        long totalLinkCount = 0;
+        for (List<BoundaryLink> boundary : result) {
+            totalLinkCount += boundary.size();
+        }
+        AbstractPlanePyramidSource.debug(2, "Rectangle set (%d rectangles), finding %d boundaries with %d links: "
+                + "%.3f ms = %.3f initializing + %.3f horizontal links + %.3f vertical links + "
+                + "%.3f joining links + %.3f correcting data structures (%.3f mcs / rectangle)%n",
+            frames.size(), result.size(), totalLinkCount,
+            (t6 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t4 - t3) * 1e-6,
+            (t5 - t4) * 1e-6, (t6 - t5) * 1e-6,
+            (t6 - t1) * 1e-3 / (double) frames.size());
     }
 
     @Override
@@ -358,9 +411,10 @@ public class RectangleSet {
             frames.size(), (t2 - t1) * 1e-6);
     }
 
-    private List<List<Frame>> doFindConnectedComponents() {
-        final List<List<Frame>> result = new ArrayList<List<Frame>>();
+    private void doFindConnectedComponents(List<List<Frame>> result) {
         final long[] allX = new long[verticalSides.size()];
+        assert allX.length > 0;
+        // - checked in the calling method
         for (int k = 0; k < allX.length; k++) {
             allX[k] = verticalSides.get(k).boundCoordPlusHalf();
         }
@@ -394,7 +448,6 @@ public class RectangleSet {
             }
             result.add(component);
         }
-        return result;
     }
 
     private void findIncidentFrames(List<Frame> result, Frame frame, long[] allX, boolean added[]) {
@@ -432,6 +485,33 @@ public class RectangleSet {
         for (Frame other : result) {
             added[other.index] = false;
         }
+    }
+
+    private void doFindHorizontalBoundaries(
+        List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
+    {
+        assert !frames.isEmpty();
+        final HorizontalBracketSet bracketSet = new HorizontalBracketSet(verticalSides, horizontalSides.get(0));
+        //TODO!!
+        throw new UnsupportedOperationException();
+    }
+
+    private void doFindVerticalBoundaries(
+        List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides,
+        List<List<BoundaryLink>> resultingContainedBoundaryLinksForVerticalSides)
+    {
+        assert !frames.isEmpty();
+        //TODO!!
+        throw new UnsupportedOperationException();
+    }
+
+    private List<List<BoundaryLink>> doJoinBoundaries(
+        List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides,
+        List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides)
+    {
+        assert !frames.isEmpty();
+        //TODO!!
+        throw new UnsupportedOperationException();
     }
 
     private static List<Frame> checkAndConvertToFrames(Collection<IRectangularArea> rectangles) {
