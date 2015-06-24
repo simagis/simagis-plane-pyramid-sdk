@@ -41,7 +41,7 @@ public class RectangleSet {
         private final long toX;
         private final long fromY;
         private final long toY;
-        private final int index;
+        final int index;
 
         private Frame(IRectangularArea rectangle, int index) {
             assert rectangle != null;
@@ -86,21 +86,69 @@ public class RectangleSet {
 
         public abstract long frameSideCoord();
 
-        public abstract long boundCoordPlusHalf();
+        /**
+         * Returns the coordinate of this frame side along the coordinate axis,
+         * to which this side is perpendicular, increased by 0.5
+         * (the sides always have half-integer coordinates).
+         *
+         * @return the perpendicular coordinate of this side + 0.5
+         */
+        public abstract long boundCoord();
 
-        public abstract long boundFromPlusHalf();
+        /**
+         * Returns the starting coordinate of this frame side along the coordinate axis,
+         * to which this link is parallel, increased by 0.5
+         * (the sides always have half-integer coordinates).
+         *
+         * @return the starting coordinate of this side + 0.5
+         */
+        public abstract long boundFrom();
 
-        public abstract long boundToPlusHalf();
+        /**
+         * Returns the ending coordinate of this frame side along the coordinate axis,
+         * to which this link is parallel, increased by 0.5
+         * (the sides always have half-integer coordinates).
+         *
+         * @return the ending coordinate of this side + 0.5
+         */
+        public abstract long boundTo();
+
+        public List<BoundaryLink> containedBoundaryLinks() {
+            return Collections.unmodifiableList(containedBoundaryLinks);
+        }
 
         @Override
         public int compareTo(Side o) {
-            final long thisCoord = boundCoordPlusHalf();
-            final long otherCoord = o.boundCoordPlusHalf();
-            return thisCoord < otherCoord ? -1 : thisCoord > otherCoord ? 1 : 0;
+            final long thisCoord = boundCoord();
+            final long otherCoord = o.boundCoord();
+            if (thisCoord < otherCoord) {
+                return -1;
+            }
+            if (thisCoord > otherCoord) {
+                return 1;
+            }
+            // In principle, we can return 0 here;
+            // but sorting along another coordinate may lead to better algorithms behaviour
+            // and (if necessary) better visualization.
+            final long thisFrom = boundFrom();
+            final long otherFrom = o.boundFrom();
+            if (thisFrom < otherFrom) {
+                return -1;
+            }
+            if (thisFrom > otherFrom) {
+                return 1;
+            }
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return (isHorizontal() ? (first ? "top" : "bottom") : (first ? "left" : "right"))
+                + " side of frame #" + frame.index;
         }
     }
 
-    static class HorizontalSide extends Side {
+    public static class HorizontalSide extends Side {
         private HorizontalSide(Frame frame, boolean first) {
             super(frame, first);
         }
@@ -116,22 +164,22 @@ public class RectangleSet {
         }
 
         @Override
-        public long boundCoordPlusHalf() {
+        public long boundCoord() {
             return first ? frame.fromY : frame.toY;
         }
 
         @Override
-        public long boundFromPlusHalf() {
+        public long boundFrom() {
             return frame.fromX;
         }
 
         @Override
-        public long boundToPlusHalf() {
+        public long boundTo() {
             return frame.toX;
         }
     }
 
-    static class VerticalSide extends Side {
+    public static class VerticalSide extends Side {
         private VerticalSide(Frame frame, boolean first) {
             super(frame, first);
         }
@@ -147,17 +195,17 @@ public class RectangleSet {
         }
 
         @Override
-        public long boundCoordPlusHalf() {
+        public long boundCoord() {
             return first ? frame.fromX : frame.toX;
         }
 
         @Override
-        public long boundFromPlusHalf() {
+        public long boundFrom() {
             return frame.fromY;
         }
 
         @Override
-        public long boundToPlusHalf() {
+        public long boundTo() {
             return frame.toY;
         }
     }
@@ -172,19 +220,17 @@ public class RectangleSet {
         private BoundaryLink(
             Side containingSide,
             Side firstTransveralSide,
-            Side secondTransveralSide,
-            long from,
-            long to)
+            Side secondTransveralSide)
         {
             assert containingSide != null && firstTransveralSide != null && secondTransveralSide != null;
-            assert from >= containingSide.boundFromPlusHalf();
-            assert to <= containingSide.boundToPlusHalf();
-            assert from < to;
             this.containingSide = containingSide;
             this.firstTransveralSide = firstTransveralSide;
             this.secondTransveralSide = secondTransveralSide;
-            this.from = from;
-            this.to = to;
+            this.from = firstTransveralSide.boundCoord();
+            this.to = secondTransveralSide.boundCoord();
+            assert from >= containingSide.boundFrom();
+            assert to <= containingSide.boundTo();
+            assert from <= to;
         }
 
         public Side containingSide() {
@@ -192,9 +238,20 @@ public class RectangleSet {
         }
 
         /**
+         * Returns the coordinate of this boundary element (link) along the coordinate axis,
+         * to which this link is perpendicular, increased by 0.5
+         * (the bounrady always has half-integer coordinate).
+         *
+         * @return the perpendicular coordinate of this link + 0.5
+         */
+        public long transversal() {
+            return containingSide.boundCoord();
+        }
+
+        /**
          * Returns the starting coordinate of this boundary element (link) along the coordinate axis,
          * to which this link is parallel, increased by 0.5
-         * (the bounrady always has half-integer coordinates).
+         * (the bounrady always has half-integer coordinate).
          *
          * @return the starting coordinate of this link + 0.5
          */
@@ -205,7 +262,7 @@ public class RectangleSet {
         /**
          * Returns the ending coordinate of this boundary element (link) along the coordinate axis,
          * to which this link is parallel, increased by 0.5
-         * (the bounrady always has half-integer coordinates).
+         * (the bounrady always has half-integer coordinate).
          *
          * @return the ending coordinate of this link + 0.5
          */
@@ -213,29 +270,16 @@ public class RectangleSet {
             return to;
         }
 
-        /**
-         * Returns the coordinate of this boundary element (link) along the coordinate axis,
-         * to which this link is perpendicular, increased by 0.5
-         * (the bounrady always has half-integer coordinates).
-         *
-         * @return the perpendicular coordinate of this link + 0.5
-         */
-        public long transversal() {
-            return containingSide.boundCoordPlusHalf();
-        }
-
         public abstract IRectangularArea sidePart();
     }
 
     public static class HorizontalBoundaryLink extends BoundaryLink {
         private HorizontalBoundaryLink(
-            HorizontalSide containedSide,
+            HorizontalSide containingSide,
             VerticalSide firstTransveralSide,
-            VerticalSide secondTransveralSide,
-            long from,
-            long to)
+            VerticalSide secondTransveralSide)
         {
-            super(containedSide, firstTransveralSide, secondTransveralSide, from, to);
+            super(containingSide, firstTransveralSide, secondTransveralSide);
         }
 
         @Override
@@ -248,12 +292,11 @@ public class RectangleSet {
 
     public static class VerticalBoundaryLink extends BoundaryLink {
         private VerticalBoundaryLink(
-            VerticalSide containedSide,
+            VerticalSide containingSide,
             HorizontalSide firstTransveralSide,
-            HorizontalSide secondTransveralSide,
-            long from,
-            long to) {
-            super(containedSide, firstTransveralSide, secondTransveralSide, from, to);
+            HorizontalSide secondTransveralSide)
+        {
+            super(containingSide, firstTransveralSide, secondTransveralSide);
         }
 
         @Override
@@ -287,6 +330,13 @@ public class RectangleSet {
         return Collections.unmodifiableList(frames);
     }
 
+    public List<HorizontalSide> horizontalSides() {
+        return Collections.unmodifiableList(horizontalSides);
+    }
+
+    public List<VerticalSide> verticalSides() {
+        return Collections.unmodifiableList(verticalSides);
+    }
 
     public int connectedComponentCount() {
         findConnectedComponents();
@@ -344,7 +394,7 @@ public class RectangleSet {
         for (int k = 0, n = horizontalSides.size(); k < n; k++) {
             containedBoundaryLinksForHorizontalSides.add(new ArrayList<BoundaryLink>());
         }
-        final List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides= new ArrayList<List<BoundaryLink>>();
+        final List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides = new ArrayList<List<BoundaryLink>>();
         for (int k = 0, n = verticalSides.size(); k < n; k++) {
             containedBoundaryLinksForVerticalSides.add(new ArrayList<BoundaryLink>());
         }
@@ -430,7 +480,7 @@ public class RectangleSet {
         assert allX.length > 0;
         // - checked in the calling method
         for (int k = 0; k < allX.length; k++) {
-            allX[k] = verticalSides.get(k).boundCoordPlusHalf();
+            allX[k] = verticalSides.get(k).boundCoord();
         }
         final boolean[] frameVisited = new boolean[frames.size()];
         final boolean[] added = new boolean[frames.size()];
@@ -505,9 +555,41 @@ public class RectangleSet {
         List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
     {
         assert !frames.isEmpty();
-        final HorizontalBracketSet bracketSet = new HorizontalBracketSet(verticalSides, horizontalSides.get(0));
-        //TODO!!
-        throw new UnsupportedOperationException();
+        final HorizontalBracketSet bracketSet = new HorizontalBracketSet(horizontalSides, verticalSides);
+        while (bracketSet.next()) {
+            Bracket lastChangingCovered = null;
+            Bracket last = null;
+            boolean lastAtBoundary = false;
+            for (Bracket bracket : bracketSet.currentIntersections()) {
+                boolean rightAtBoundary = bracket.followingNestingDepth == 1;
+                if (lastChangingCovered == null) {
+                    assert bracket.coord == bracketSet.horizontal.boundFrom();
+                    lastChangingCovered = bracket;
+                } else if (rightAtBoundary != lastAtBoundary) {
+                    if (lastAtBoundary) {
+                        final HorizontalBoundaryLink l = new HorizontalBoundaryLink(
+                            bracketSet.horizontal,
+                            lastChangingCovered.intersectingSide,
+                            bracket.intersectingSide);
+                        if (l.from < l.to) {
+                            resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(l);
+                        }
+                    }
+                    lastChangingCovered = bracket;
+                }
+                lastAtBoundary = rightAtBoundary;
+                last = bracket;
+            }
+            if (lastAtBoundary) {
+                final HorizontalBoundaryLink l = new HorizontalBoundaryLink(
+                    bracketSet.horizontal,
+                    lastChangingCovered.intersectingSide,
+                    last.intersectingSide);
+                if (l.from < l.to) {
+                    resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(l);
+                }
+            }
+        }
     }
 
     private void doFindVerticalBoundaries(
@@ -516,7 +598,6 @@ public class RectangleSet {
     {
         assert !frames.isEmpty();
         //TODO!!
-        throw new UnsupportedOperationException();
     }
 
     private List<List<BoundaryLink>> doJoinBoundaries(
@@ -525,7 +606,7 @@ public class RectangleSet {
     {
         assert !frames.isEmpty();
         //TODO!!
-        throw new UnsupportedOperationException();
+        return new ArrayList<List<BoundaryLink>>();
     }
 
     private static List<Frame> checkAndConvertToFrames(Collection<IRectangularArea> rectangles) {
@@ -546,6 +627,58 @@ public class RectangleSet {
             frames.add(new Frame(rectangle, index++));
         }
         return frames;
+    }
+
+    static class Bracket implements Comparable<Bracket> {
+        final Frame frame;
+        final HorizontalSide containingSide;
+        final VerticalSide intersectingSide;
+        final long coord;
+        final boolean first;
+        int followingNestingDepth = -157;
+
+        public Bracket(HorizontalSide side, boolean first) {
+            this.frame = side.frame;
+            this.containingSide = side;
+            this.intersectingSide = first ? side.frame.lessVerticalSide : side.frame.higherVerticalSide;
+            this.coord = intersectingSide.boundCoord();
+            assert this.frame == intersectingSide.frame;
+            assert first == intersectingSide.first;
+            this.first = first;
+        }
+
+        @Override
+        public int compareTo(Bracket o) {
+            if (this.coord < o.coord) {
+                return -1;
+            }
+            if (this.coord > o.coord) {
+                return 1;
+            }
+            if (!this.first && o.first) {
+                return -1;
+            }
+            if (this.first && !o.first) {
+                return 1;
+            }
+            // Closing bracket is LESS than opening.
+            if (this.frame.index < o.frame.index) {
+                return -1;
+            }
+            if (this.frame.index > o.frame.index) {
+                return 1;
+            }
+            // We need unique identifier to allow storing in TreeSet several brackets with the same x.
+            // We use the frame index for this goal; though it is equal for two sides of the same frame,
+            // these sides have different "left" field.
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return (first ? "opening" : "closing") + " bracket " + coord + " at line " + containingSide
+                + ", following nesting level " + followingNestingDepth;
+        }
     }
 }
 

@@ -113,8 +113,8 @@ public class RectangleSetTest {
                     for (int j = 0; j < horizontalCount; j++) {
                         final int frameWidth = frameMinWidth + rnd.nextInt(frameMaxWidth - frameMinWidth + 1);
                         final int frameHeight = frameMinHeight + rnd.nextInt(frameMaxHeight - frameMinHeight + 1);
-                        final long x = j * (frameWidth - overlap) + rnd.nextInt(maxError) - maxError / 2;
-                        final long y = i * (frameHeight - overlap) + rnd.nextInt(maxError) - maxError / 2;
+                        final long x = j * (frameWidth - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
+                        final long y = i * (frameHeight - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
                         final IRectangularArea r = IRectangularArea.valueOf(
                             IPoint.valueOf(x, y),
                             IPoint.valueOf(x + frameWidth - 1, y + frameHeight - 1));
@@ -135,7 +135,7 @@ public class RectangleSetTest {
         }
         Matrix<? extends UpdatablePArray> demo = Arrays.SMM.newByteMatrix(imageWidth, imageHeight);
         for (IRectangularArea area : rectangles) {
-            draw(demo, area, coordinateDivider);
+            draw(demo, area, coordinateDivider, 255, 64);
         }
         final File sourceFile = new File(demoFolder, rectanglesFile.getName() + ".source.bmp");
         System.out.printf("Writing source image %dx%d into %s: %d rectangles%n",
@@ -152,27 +152,53 @@ public class RectangleSetTest {
             throw new IllegalArgumentException("Zero or negative number of tests");
         }
         for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
-            demo = Arrays.SMM.newByteMatrix(imageWidth, imageHeight);
+            List<Matrix<? extends UpdatablePArray>> demoImage = new ArrayList<Matrix<? extends UpdatablePArray>>();
+            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
+            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
+            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
             final RectangleSet connectedSet = rectangleSet.connectedComponent(k);
             for (RectangleSet.Frame frame : connectedSet.frames()) {
-                draw(demo, frame.rectangle(), coordinateDivider);
+                draw(demoImage.get(0), frame.rectangle(), coordinateDivider, 255, 64);
+                draw(demoImage.get(1), frame.rectangle(), coordinateDivider, 255, 64);
+                draw(demoImage.get(2), frame.rectangle(), coordinateDivider, 255, 64);
+            }
+            connectedSet.findBoundaries();
+            for (RectangleSet.Side side : connectedSet.horizontalSides()) {
+                for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
+                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 0, 0);
+                    draw(demoImage.get(1), link.sidePart(), coordinateDivider, 255, 0);
+                    draw(demoImage.get(2), link.sidePart(), coordinateDivider, 0, 0);
+                }
+            }
+            for (RectangleSet.Side side : connectedSet.verticalSides()) {
+                for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
+                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 255, 0);
+                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 255, 0);
+                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 0, 0);
+                }
             }
             final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp");
             System.out.printf("Writing component #%d into %s: %s%n", k + 1, f, connectedSet);
-            ExternalAlgorithmCaller.writeImage(f, Collections.singletonList(demo));
+            ExternalAlgorithmCaller.writeImage(f, demoImage);
         }
     }
 
-    private static void draw(Matrix<? extends UpdatablePArray> demo, IRectangularArea area, double coordinateDivider) {
+    private static void draw(
+        Matrix<? extends UpdatablePArray> demo,
+        IRectangularArea area,
+        double coordinateDivider,
+        int borderColor,
+        int innerColor)
+    {
         final IRectangularArea divided = IRectangularArea.valueOf(
             area.min().multiply(1.0 / coordinateDivider),
             area.max().multiply(1.0 / coordinateDivider));
-        demo.subMatrix(divided, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(255);
+        demo.subMatrix(divided, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(borderColor);
         if (divided.size(0) > 2 && divided.size(1) > 2) {
             final IRectangularArea inner = IRectangularArea.valueOf(
                 divided.min().addToAllCoordinates(1),
                 divided.max().addToAllCoordinates(-1));
-            demo.subMatrix(inner, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(128);
+            demo.subMatrix(inner, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(innerColor);
         }
     }
 }
