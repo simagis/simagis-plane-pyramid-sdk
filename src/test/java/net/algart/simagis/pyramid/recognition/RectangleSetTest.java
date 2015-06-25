@@ -40,35 +40,33 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class RectangleSetTest {
     public static void main(String[] args) throws IOException, JSONException {
-        if (args.length < 5) {
+        if (args.length < 3) {
             System.out.println("Usage:");
             System.out.println("    " + RectangleSetTest.class.getName()
-                + " numberOfTests rectangles-description.json width height demo-files-folder [coordinate-divider]");
+                + " numberOfTests rectangles-description.json demo-files-folder [coordinate-divider]");
             return;
         }
         final int numberOfTests = Integer.parseInt(args[0]);
         final File rectanglesFile = new File(args[1]);
-        long imageWidth = Long.parseLong(args[2]);
-        long imageHeight = Long.parseLong(args[3]);
-        final File demoFolder = new File(args[4]);
+        final File demoFolder = new File(args[2]);
         final double coordinateDivider;
-        final Random random = new Random(157);
         demoFolder.mkdirs();
         final JSONObject rectanglesJson = new JSONObject(ExternalProcessor.readUTF8(rectanglesFile));
         final JSONArray rectanglesArray = rectanglesJson.has("origins") ?
             rectanglesJson.optJSONArray("origins") :
             rectanglesJson.optJSONArray("rectangles");
         final String algorithm = rectanglesJson.optString("algorithm", null);
+        Long imageWidth = null;
+        Long imageHeight = null;
         final List<IRectangularArea> rectangles = new ArrayList<IRectangularArea>();
         if (rectanglesArray != null) {
             System.out.println("Reading rectangles...");
-            coordinateDivider = args.length >= 6 ? Double.parseDouble(args[5]) : 1.0;
+            coordinateDivider = args.length >= 4 ? Double.parseDouble(args[3]) : 1.0;
             for (int k = 0, n = rectanglesArray.length(); k < n; k++) {
                 final JSONObject rectangleJson = rectanglesArray.getJSONObject(k);
                 rectangles.add(IRectangularArea.valueOf(
@@ -103,8 +101,12 @@ public class RectangleSetTest {
                 if (frameMinHeight > frameMaxHeight) {
                     throw new JSONException("frameMinHeight > frameMaxHeight");
                 }
-                imageWidth = rectanglesJson.optLong("imageWidth", imageWidth);
-                imageHeight = rectanglesJson.optLong("imageHeight", imageHeight);
+                if (rectanglesJson.has("imageWidth")) {
+                    imageWidth = rectanglesJson.getLong("imageWidth");
+                }
+                if (rectanglesJson.has("imageHeight")) {
+                    imageHeight = rectanglesJson.getLong("imageHeight");
+                }
                 final int horizontalCount = rectanglesJson.getInt("horizontalCount");
                 final int verticalCount = rectanglesJson.getInt("verticalCount");
                 final int overlap = rectanglesJson.getInt("overlap");
@@ -117,8 +119,7 @@ public class RectangleSetTest {
                         final long x = (j + 1) * (frameWidth - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
                         final long y = (i + 1) * (frameHeight - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
                         final IRectangularArea r = IRectangularArea.valueOf(
-                            IPoint.valueOf(x, y),
-                            IPoint.valueOf(x + frameWidth - 1, y + frameHeight - 1));
+                            x, y, x + frameWidth - 1, y + frameHeight - 1);
                         if (rectangles.size() < 10) {
                             System.out.printf("Frame #%d %dx%d: %s%n", rectangles.size() + 1, r.size(0), r.size(1), r);
                         } else if (rectangles.size() == 10) {
@@ -135,6 +136,12 @@ public class RectangleSetTest {
                 + "\" must contain either the list of rectangles or description of the generating algorithm");
         }
         RectangleSet rectangleSet = RectangleSet.newInstance(rectangles);
+        if (imageWidth == null) {
+            imageWidth = rectangleSet.circumscribedRectangle().max(0) + 100;
+        }
+        if (imageHeight == null) {
+            imageHeight = rectangleSet.circumscribedRectangle().max(1) + 100;
+        }
         List<Matrix<? extends UpdatablePArray>> demo = newImage(imageWidth, imageHeight);
         draw(demo, rectangleSet.circumscribedRectangle(), coordinateDivider, Color.YELLOW, Color.BLUE);
         for (IRectangularArea area : rectangles) {
