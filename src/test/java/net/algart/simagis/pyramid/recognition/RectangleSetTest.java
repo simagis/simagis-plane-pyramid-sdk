@@ -36,6 +36,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public class RectangleSetTest {
                     throw new JSONException("frameMinHeight > frameMaxHeight");
                 }
                 imageWidth = rectanglesJson.optLong("imageWidth", imageWidth);
-                imageHeight= rectanglesJson.optLong("imageHeight", imageHeight);
+                imageHeight = rectanglesJson.optLong("imageHeight", imageHeight);
                 final int horizontalCount = rectanglesJson.getInt("horizontalCount");
                 final int verticalCount = rectanglesJson.getInt("verticalCount");
                 final int overlap = rectanglesJson.getInt("overlap");
@@ -113,13 +114,13 @@ public class RectangleSetTest {
                     for (int j = 0; j < horizontalCount; j++) {
                         final int frameWidth = frameMinWidth + rnd.nextInt(frameMaxWidth - frameMinWidth + 1);
                         final int frameHeight = frameMinHeight + rnd.nextInt(frameMaxHeight - frameMinHeight + 1);
-                        final long x = j * (frameWidth - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
-                        final long y = i * (frameHeight - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
+                        final long x = (j + 1) * (frameWidth - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
+                        final long y = (i + 1) * (frameHeight - overlap) + rnd.nextInt(maxError + 1) - maxError / 2;
                         final IRectangularArea r = IRectangularArea.valueOf(
                             IPoint.valueOf(x, y),
                             IPoint.valueOf(x + frameWidth - 1, y + frameHeight - 1));
                         if (rectangles.size() < 10) {
-                            System.out.printf("Frame #%d %dx%d: %s%n", r.size(0), r.size(1), rectangles.size() + 1, r);
+                            System.out.printf("Frame #%d %dx%d: %s%n", rectangles.size() + 1, r.size(0), r.size(1), r);
                         } else if (rectangles.size() == 10) {
                             System.out.println("...");
                         }
@@ -133,16 +134,17 @@ public class RectangleSetTest {
             throw new JSONException("JSON file \"" + rectanglesFile
                 + "\" must contain either the list of rectangles or description of the generating algorithm");
         }
-        Matrix<? extends UpdatablePArray> demo = Arrays.SMM.newByteMatrix(imageWidth, imageHeight);
+        RectangleSet rectangleSet = RectangleSet.newInstance(rectangles);
+        List<Matrix<? extends UpdatablePArray>> demo = newImage(imageWidth, imageHeight);
+        draw(demo, rectangleSet.circumscribedRectangle(), coordinateDivider, Color.YELLOW, Color.BLUE);
         for (IRectangularArea area : rectangles) {
-            draw(demo, area, coordinateDivider, 255, 64);
+            draw(demo, area, coordinateDivider, Color.WHITE, Color.DARK_GRAY);
         }
         final File sourceFile = new File(demoFolder, rectanglesFile.getName() + ".source.bmp");
         System.out.printf("Writing source image %dx%d into %s: %d rectangles%n",
             imageWidth, imageHeight, sourceFile, rectangles.size());
-        ExternalAlgorithmCaller.writeImage(sourceFile, Collections.singletonList(demo));
+        ExternalAlgorithmCaller.writeImage(sourceFile, demo);
 
-        RectangleSet rectangleSet = null;
         for (int testIndex = 0; testIndex < numberOfTests; testIndex++) {
             System.out.printf("Test #%d%n", testIndex);
             rectangleSet = RectangleSet.newInstance(rectangles);
@@ -152,53 +154,56 @@ public class RectangleSetTest {
             throw new IllegalArgumentException("Zero or negative number of tests");
         }
         for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
-            List<Matrix<? extends UpdatablePArray>> demoImage = new ArrayList<Matrix<? extends UpdatablePArray>>();
-            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
-            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
-            demoImage.add(Arrays.SMM.newByteMatrix(imageWidth, imageHeight));
+            demo = newImage(imageWidth, imageHeight);
             final RectangleSet connectedSet = rectangleSet.connectedComponent(k);
             for (RectangleSet.Frame frame : connectedSet.frames()) {
-                draw(demoImage.get(0), frame.rectangle(), coordinateDivider, 255, 64);
-                draw(demoImage.get(1), frame.rectangle(), coordinateDivider, 255, 64);
-                draw(demoImage.get(2), frame.rectangle(), coordinateDivider, 255, 64);
+                draw(demo, frame.rectangle(), coordinateDivider, Color.WHITE, Color.DARK_GRAY);
             }
             connectedSet.findBoundaries();
             for (RectangleSet.Side side : connectedSet.horizontalSides()) {
                 for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 0, 0);
-                    draw(demoImage.get(1), link.sidePart(), coordinateDivider, 255, 0);
-                    draw(demoImage.get(2), link.sidePart(), coordinateDivider, 0, 0);
+                    draw(demo, link.sidePart(), coordinateDivider, Color.GREEN, Color.BLACK);
                 }
             }
             for (RectangleSet.Side side : connectedSet.verticalSides()) {
                 for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 255, 0);
-                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 255, 0);
-                    draw(demoImage.get(0), link.sidePart(), coordinateDivider, 0, 0);
+                    draw(demo, link.sidePart(), coordinateDivider, Color.YELLOW, Color.BLACK);
                 }
             }
             final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp");
             System.out.printf("Writing component #%d into %s: %s%n", k + 1, f, connectedSet);
-            ExternalAlgorithmCaller.writeImage(f, demoImage);
+            ExternalAlgorithmCaller.writeImage(f, demo);
         }
     }
 
+    private static List<Matrix<? extends UpdatablePArray>> newImage(long width, long height) {
+        ArrayList<Matrix<? extends UpdatablePArray>> result = new ArrayList<Matrix<? extends UpdatablePArray>>();
+        result.add(Arrays.SMM.newByteMatrix(width, height));
+        result.add(Arrays.SMM.newByteMatrix(width, height));
+        result.add(Arrays.SMM.newByteMatrix(width, height));
+        return result;
+    }
+
     private static void draw(
-        Matrix<? extends UpdatablePArray> demo,
+        List<Matrix<? extends UpdatablePArray>> demo,
         IRectangularArea area,
         double coordinateDivider,
-        int borderColor,
-        int innerColor)
+        Color borderColor,
+        Color innerColor)
     {
         final IRectangularArea divided = IRectangularArea.valueOf(
             area.min().multiply(1.0 / coordinateDivider),
             area.max().multiply(1.0 / coordinateDivider));
-        demo.subMatrix(divided, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(borderColor);
-        if (divided.size(0) > 2 && divided.size(1) > 2) {
-            final IRectangularArea inner = IRectangularArea.valueOf(
-                divided.min().addToAllCoordinates(1),
-                divided.max().addToAllCoordinates(-1));
-            demo.subMatrix(inner, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(innerColor);
+        for (int k = 0; k < demo.size(); k++) {
+            int borderValue = k == 0 ? borderColor.getRed() : k == 1 ? borderColor.getGreen() : borderColor.getBlue();
+            int innerValue = k == 0 ? innerColor.getRed() : k == 1 ? innerColor.getGreen() : innerColor.getBlue();
+            demo.get(k).subMatrix(divided, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(borderValue);
+            if (divided.size(0) > 2 && divided.size(1) > 2) {
+                final IRectangularArea inner = IRectangularArea.valueOf(
+                    divided.min().addToAllCoordinates(1),
+                    divided.max().addToAllCoordinates(-1));
+                demo.get(k).subMatrix(inner, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(innerValue);
+            }
         }
     }
 }

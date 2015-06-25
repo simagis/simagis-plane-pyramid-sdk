@@ -102,6 +102,9 @@ class HorizontalBracketSet {
         horizontalIndex++;
         horizontal = newHorizontal;
         currentY = newY;
+        if (newHorizontal == null) {
+            assert intersectingSides.isEmpty() : "Non-empty intersection set at the end of the loop";
+        }
         if (DEBUG_MODE) {
             System.out.printf("  Horizontal #%d, y=%d: brackets %s%n", horizontalIndex, currentY, intersectingSides);
         }

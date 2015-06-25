@@ -285,8 +285,8 @@ public class RectangleSet {
         @Override
         public IRectangularArea sidePart() {
             return IRectangularArea.valueOf(
-                IPoint.valueOf(from, containingSide.frameSideCoord()),
-                IPoint.valueOf(to - 1, containingSide.frameSideCoord()));
+                from, containingSide.frameSideCoord(),
+                to - 1, containingSide.frameSideCoord());
         }
     }
 
@@ -302,13 +302,14 @@ public class RectangleSet {
         @Override
         public IRectangularArea sidePart() {
             return IRectangularArea.valueOf(
-                IPoint.valueOf(containingSide.frameSideCoord(), from),
-                IPoint.valueOf(containingSide.frameSideCoord(), to - 1));
+                containingSide.frameSideCoord(), from,
+                containingSide.frameSideCoord(), to - 1);
         }
     }
 
 
     private final List<Frame> frames;
+    private final IRectangularArea circumscribedRectangle;
 
     private volatile List<HorizontalSide> horizontalSides = null;
     private volatile List<VerticalSide> verticalSides = null;
@@ -320,6 +321,21 @@ public class RectangleSet {
 
     RectangleSet(List<Frame> frames) {
         this.frames = frames;
+        if (frames.isEmpty()) {
+            circumscribedRectangle = null;
+        } else {
+            long minX = Long.MAX_VALUE;
+            long minY = Long.MAX_VALUE;
+            long maxX = Long.MIN_VALUE;
+            long maxY = Long.MIN_VALUE;
+            for (Frame frame : frames) {
+                minX = Math.min(minX, frame.fromX);
+                minY = Math.min(minY, frame.fromY);
+                maxX = Math.max(maxX, frame.toX - 1);
+                maxY = Math.max(maxY, frame.toY - 1);
+            }
+            circumscribedRectangle = IRectangularArea.valueOf(minX, minY, maxX, maxY);
+        }
     }
 
     public static RectangleSet newInstance(Collection<IRectangularArea> rectangles) {
@@ -328,6 +344,10 @@ public class RectangleSet {
 
     public List<Frame> frames() {
         return Collections.unmodifiableList(frames);
+    }
+
+    public IRectangularArea circumscribedRectangle() {
+        return circumscribedRectangle;
     }
 
     public List<HorizontalSide> horizontalSides() {
