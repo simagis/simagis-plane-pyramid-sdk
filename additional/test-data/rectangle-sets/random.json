@@ -1,12 +1,10 @@
 {
   "algorithm": "regular",
-  "imageWidth": 900,
-  "imageHeight": 700,
   "frameMinWidth": 10,
   "frameMaxWidth": 50,
   "frameMinHeight": 18,
   "frameMaxHeight": 40,
-  "horizontalCount": 13,
+  "horizontalCount": 33,
   "verticalCount": 12,
   "overlap": 3,
   "maxError": 10,

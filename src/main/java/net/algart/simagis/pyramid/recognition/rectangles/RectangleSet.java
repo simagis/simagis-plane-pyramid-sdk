@@ -24,13 +24,16 @@
 
 package net.algart.simagis.pyramid.recognition.rectangles;
 
-import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.AbstractPlanePyramidSource;
 
 import java.util.*;
+import java.util.Arrays;
 
 public class RectangleSet {
+    static final int DEBUG_LEVEL = net.algart.arrays.Arrays.SystemSettings.getIntProperty(
+        "net.algart.simagis.pyramid.recognition.rectangles.debugLevel", 0);
+
     public static class Frame {
         final RectangleSet.HorizontalSide lessHorizontalSide;
         final RectangleSet.HorizontalSide higherHorizontalSide;
@@ -80,6 +83,10 @@ public class RectangleSet {
 
         public boolean isFirstOfTwoParallelSides() {
             return first;
+        }
+
+        public boolean isSecondOfTwoParallelSides() {
+            return !first;
         }
 
         public abstract boolean isHorizontal();
@@ -575,39 +582,30 @@ public class RectangleSet {
         List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
     {
         assert !frames.isEmpty();
-        final HorizontalBracketSet bracketSet = new HorizontalBracketSet(horizontalSides, verticalSides);
+        final HorizontalBracketSet bracketSet = new HorizontalBracketSet(horizontalSides, true);
         while (bracketSet.next()) {
-            Bracket lastChangingCovered = null;
-            Bracket last = null;
-            boolean lastAtBoundary = false;
-            for (Bracket bracket : bracketSet.currentIntersections()) {
-                boolean rightAtBoundary = bracket.followingNestingDepth == 1;
-                if (lastChangingCovered == null) {
-                    assert bracket.coord == bracketSet.horizontal.boundFrom();
-                    lastChangingCovered = bracket;
-                } else if (rightAtBoundary != lastAtBoundary) {
-                    if (lastAtBoundary) {
-                        final HorizontalBoundaryLink l = new HorizontalBoundaryLink(
-                            bracketSet.horizontal,
-                            lastChangingCovered.intersectingSide,
-                            bracket.intersectingSide);
-                        if (l.from < l.to) {
-                            resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(l);
-                        }
-                    }
-                    lastChangingCovered = bracket;
+            final Frame frame = bracketSet.horizontal.frame;
+            final NavigableSet<Bracket> brackets = bracketSet.currentIntersections();
+            final Bracket lastBefore = bracketSet.lastIntersectionBeforeLeft();
+            boolean lastRightAtBoundary = lastBefore == null || lastBefore.followingCoveringDepth == 0;
+            VerticalSide lastLeftVertical = lastRightAtBoundary ? frame.lessVerticalSide : null;
+            for (Bracket bracket : brackets) {
+                assert bracket.covers(bracketSet.y);
+                boolean rightAtBoundary = bracket.followingCoveringDepth == 0;
+                if (rightAtBoundary == lastRightAtBoundary) {
+                    continue;
                 }
-                lastAtBoundary = rightAtBoundary;
-                last = bracket;
+                if (rightAtBoundary) {
+                    lastLeftVertical = (VerticalSide) bracket.intersectingSide;
+                } else {
+                    addHorizontalLink(bracketSet, lastLeftVertical, (VerticalSide) bracket.intersectingSide,
+                        resultingContainedBoundaryLinksForHorizontalSides);
+                }
+                lastRightAtBoundary = rightAtBoundary;
             }
-            if (lastAtBoundary) {
-                final HorizontalBoundaryLink l = new HorizontalBoundaryLink(
-                    bracketSet.horizontal,
-                    lastChangingCovered.intersectingSide,
-                    last.intersectingSide);
-                if (l.from < l.to) {
-                    resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(l);
-                }
+            if (lastRightAtBoundary) {
+                addHorizontalLink(bracketSet, lastLeftVertical, frame.higherVerticalSide,
+                    resultingContainedBoundaryLinksForHorizontalSides);
             }
         }
     }
@@ -629,6 +627,21 @@ public class RectangleSet {
         return new ArrayList<List<BoundaryLink>>();
     }
 
+    private static void addHorizontalLink(
+        HorizontalBracketSet bracketSet,
+        VerticalSide firstTransveralSide,
+        VerticalSide secondTransveralSide,
+        List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
+    {
+        final HorizontalBoundaryLink link = new HorizontalBoundaryLink(
+            bracketSet.horizontal,
+            firstTransveralSide,
+            secondTransveralSide);
+        if (link.from < link.to) {
+            resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(link);
+        }
+    }
+
     private static List<Frame> checkAndConvertToFrames(Collection<IRectangularArea> rectangles) {
         if (rectangles == null) {
             throw new NullPointerException("Null rectangles argument");
@@ -647,58 +660,6 @@ public class RectangleSet {
             frames.add(new Frame(rectangle, index++));
         }
         return frames;
-    }
-
-    static class Bracket implements Comparable<Bracket> {
-        final Frame frame;
-        final HorizontalSide containingSide;
-        final VerticalSide intersectingSide;
-        final long coord;
-        final boolean first;
-        int followingNestingDepth = -157;
-
-        public Bracket(HorizontalSide side, boolean first) {
-            this.frame = side.frame;
-            this.containingSide = side;
-            this.intersectingSide = first ? side.frame.lessVerticalSide : side.frame.higherVerticalSide;
-            this.coord = intersectingSide.boundCoord();
-            assert this.frame == intersectingSide.frame;
-            assert first == intersectingSide.first;
-            this.first = first;
-        }
-
-        @Override
-        public int compareTo(Bracket o) {
-            if (this.coord < o.coord) {
-                return -1;
-            }
-            if (this.coord > o.coord) {
-                return 1;
-            }
-            if (!this.first && o.first) {
-                return -1;
-            }
-            if (this.first && !o.first) {
-                return 1;
-            }
-            // Closing bracket is LESS than opening.
-            if (this.frame.index < o.frame.index) {
-                return -1;
-            }
-            if (this.frame.index > o.frame.index) {
-                return 1;
-            }
-            // We need unique identifier to allow storing in TreeSet several brackets with the same x.
-            // We use the frame index for this goal; though it is equal for two sides of the same frame,
-            // these sides have different "left" field.
-            return 0;
-        }
-
-        @Override
-        public String toString() {
-            return (first ? "opening" : "closing") + " bracket " + coord + " at line " + containingSide
-                + ", following nesting level " + followingNestingDepth;
-        }
     }
 }
 

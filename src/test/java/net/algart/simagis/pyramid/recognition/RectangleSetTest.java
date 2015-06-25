@@ -145,7 +145,7 @@ public class RectangleSetTest {
         List<Matrix<? extends UpdatablePArray>> demo = newImage(imageWidth, imageHeight);
         draw(demo, rectangleSet.circumscribedRectangle(), coordinateDivider, Color.YELLOW, Color.BLUE);
         for (IRectangularArea area : rectangles) {
-            draw(demo, area, coordinateDivider, Color.WHITE, Color.DARK_GRAY);
+            draw(demo, area, coordinateDivider, Color.LIGHT_GRAY, Color.DARK_GRAY);
         }
         final File sourceFile = new File(demoFolder, rectanglesFile.getName() + ".source.bmp");
         System.out.printf("Writing source image %dx%d into %s: %d rectangles%n",
@@ -153,33 +153,32 @@ public class RectangleSetTest {
         ExternalAlgorithmCaller.writeImage(sourceFile, demo);
 
         for (int testIndex = 0; testIndex < numberOfTests; testIndex++) {
-            System.out.printf("Test #%d%n", testIndex);
+            System.out.printf("%nTest #%d%n", testIndex + 1);
             rectangleSet = RectangleSet.newInstance(rectangles);
             rectangleSet.findConnectedComponents();
-        }
-        if (rectangleSet == null) {
-            throw new IllegalArgumentException("Zero or negative number of tests");
-        }
-        for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
-            demo = newImage(imageWidth, imageHeight);
-            final RectangleSet connectedSet = rectangleSet.connectedComponent(k);
-            for (RectangleSet.Frame frame : connectedSet.frames()) {
-                draw(demo, frame.rectangle(), coordinateDivider, Color.WHITE, Color.DARK_GRAY);
-            }
-            connectedSet.findBoundaries();
-            for (RectangleSet.Side side : connectedSet.horizontalSides()) {
-                for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                    draw(demo, link.sidePart(), coordinateDivider, Color.GREEN, Color.BLACK);
+            for (int k = 0; k < Math.min(10, rectangleSet.connectedComponentCount()); k++) {
+                demo = newImage(imageWidth, imageHeight);
+                final RectangleSet connectedSet = rectangleSet.connectedComponent(k);
+                connectedSet.findBoundaries();
+                if (testIndex == 0) {
+                    for (RectangleSet.Frame frame : connectedSet.frames()) {
+                        draw(demo, frame.rectangle(), coordinateDivider, Color.WHITE, Color.DARK_GRAY);
+                    }
+                    for (RectangleSet.Side side : connectedSet.horizontalSides()) {
+                        for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
+                            draw(demo, link.sidePart(), coordinateDivider, Color.GREEN, Color.BLACK);
+                        }
+                    }
+                    for (RectangleSet.Side side : connectedSet.verticalSides()) {
+                        for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
+                            draw(demo, link.sidePart(), coordinateDivider, Color.YELLOW, Color.BLACK);
+                        }
+                    }
+                    final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + (k + 1) + ".bmp");
+                    System.out.printf("Writing component #%d into %s: %s%n%n", k + 1, f, connectedSet);
+                    ExternalAlgorithmCaller.writeImage(f, demo);
                 }
             }
-            for (RectangleSet.Side side : connectedSet.verticalSides()) {
-                for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                    draw(demo, link.sidePart(), coordinateDivider, Color.YELLOW, Color.BLACK);
-                }
-            }
-            final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + k + ".bmp");
-            System.out.printf("Writing component #%d into %s: %s%n", k + 1, f, connectedSet);
-            ExternalAlgorithmCaller.writeImage(f, demo);
         }
     }
 

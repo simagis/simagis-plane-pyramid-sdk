@@ -28,37 +28,26 @@ import java.util.*;
 
 // This class should be used in a single thread.
 class HorizontalBracketSet {
-    private static final boolean DEBUG_MODE = true;
-
     private final List<RectangleSet.HorizontalSide> allHorizontalSides;
-    private final List<RectangleSet.VerticalSide> allVerticalSides;
-    // - for debug needs
     private final int numberOfHorizontals;
+    private boolean onlyStrictIntersections;
     int horizontalIndex;
     RectangleSet.HorizontalSide horizontal;
-    private long currentY;
-    private NavigableSet<RectangleSet.Bracket> intersectingSides = new TreeSet<RectangleSet.Bracket>();
+    long y;
+    private NavigableSet<Bracket> intersectingSides = new TreeSet<Bracket>();
 
-    HorizontalBracketSet(
-        List<RectangleSet.HorizontalSide> allHorizontalSides,
-        List<RectangleSet.VerticalSide> allVerticalSides)
-    {
+    HorizontalBracketSet(List<RectangleSet.HorizontalSide> allHorizontalSides, boolean onlyStrictIntersections) {
         assert allHorizontalSides != null;
-        assert allVerticalSides != null;
         assert !allHorizontalSides.isEmpty();
-        assert !allVerticalSides.isEmpty();
         // - checked in the calling method to simplify the logic
         this.allHorizontalSides = allHorizontalSides;
-        this.allVerticalSides = allVerticalSides;
         this.numberOfHorizontals = allHorizontalSides.size();
+        this.onlyStrictIntersections = onlyStrictIntersections;
         this.horizontalIndex = -1;
         this.horizontal = null;
-        if (DEBUG_MODE) {
+        if (RectangleSet.DEBUG_LEVEL >= 2) {
             for (int k = 1, n = allHorizontalSides.size(); k < n; k++) {
                 assert allHorizontalSides.get(k).boundCoord() >= allHorizontalSides.get(k - 1).boundCoord();
-            }
-            for (int k = 1, n = allVerticalSides.size(); k < n; k++) {
-                assert allVerticalSides.get(k).boundCoord() >= allVerticalSides.get(k - 1).boundCoord();
             }
         }
     }
@@ -71,29 +60,39 @@ class HorizontalBracketSet {
         final RectangleSet.HorizontalSide newHorizontal = horizontalIndex + 1 < numberOfHorizontals ?
             allHorizontalSides.get(horizontalIndex + 1) :
             null;
+        // Theoretically, if it is null, we may just return false and do not anything; but we prefer
+        // to remove the last brackets for self-testing goals (intersectingSides must become empty)
         final long newY = newHorizontal == null ? -157 : newHorizontal.boundCoord();
         if (horizontal == null || newHorizontal == null
             || newHorizontal.boundCoord() != horizontal.boundCoord())
         {
+            RectangleSet.HorizontalSide h;
             if (horizontal != null) {
                 int index = horizontalIndex;
-                while (index > 0 && allHorizontalSides.get(--index).boundCoord() == currentY) {
-                    ;
-                }
-                while (index <= horizontalIndex) {
-                    RectangleSet.HorizontalSide h = allHorizontalSides.get(index);
-                    if (!h.isFirstOfTwoParallelSides()) {
-                        removeHorizontal(h);
+                while (index >= 0 && (h = allHorizontalSides.get(index)).boundCoord() == y) {
+                    if (onlyStrictIntersections) {
+                        if (h.isFirstOfTwoParallelSides()) {
+                            addHorizontal(h);
+                        }
+                    } else {
+                        if (h.isSecondOfTwoParallelSides()) {
+                            removeHorizontal(h);
+                        }
                     }
-                    index++;
+                    index--;
                 }
             }
             if (newHorizontal != null) {
                 int index = horizontalIndex + 1;
-                RectangleSet.HorizontalSide h;
                 while (index < numberOfHorizontals && (h = allHorizontalSides.get(index)).boundCoord() == newY) {
-                    if (h.isFirstOfTwoParallelSides()) {
-                        addHorizontal(h);
+                    if (onlyStrictIntersections) {
+                        if (h.isSecondOfTwoParallelSides()) {
+                            removeHorizontal(h);
+                        }
+                    } else {
+                        if (h.isFirstOfTwoParallelSides()) {
+                            addHorizontal(h);
+                        }
                     }
                     index++;
                 }
@@ -101,61 +100,76 @@ class HorizontalBracketSet {
         }
         horizontalIndex++;
         horizontal = newHorizontal;
-        currentY = newY;
-        if (newHorizontal == null) {
-            assert intersectingSides.isEmpty() : "Non-empty intersection set at the end of the loop";
+        y = newY;
+        if (newHorizontal == null && !intersectingSides.isEmpty()) {
+            throw new AssertionError("Non-empty intersection set at the end of the loop");
         }
-        if (DEBUG_MODE) {
-            System.out.printf("  Horizontal #%d, y=%d: brackets %s%n", horizontalIndex, currentY, intersectingSides);
+        if (RectangleSet.DEBUG_LEVEL >= 2) {
+            System.out.printf("  Horizontal #%d, y=%d: brackets%n%s",
+                horizontalIndex, y, toDebugString(intersectingSides));
         }
         return horizontal != null;
     }
 
-    Collection<RectangleSet.Bracket> currentIntersections() {
-        final RectangleSet.Bracket bracketFrom = new RectangleSet.Bracket(horizontal, true);
-        final RectangleSet.Bracket bracketTo = new RectangleSet.Bracket(horizontal, false);
-        if (DEBUG_MODE) {
+    NavigableSet<Bracket> currentIntersections() {
+        final Bracket bracketFrom = new Bracket(horizontal, horizontal.frame.lessVerticalSide, true);
+        final Bracket bracketTo = new Bracket(horizontal, horizontal.frame.higherVerticalSide, false);
+        if (RectangleSet.DEBUG_LEVEL >= 1 && !onlyStrictIntersections) {
             assert intersectingSides.contains(bracketFrom);
             assert intersectingSides.contains(bracketTo);
         }
-        final NavigableSet<RectangleSet.Bracket> result = intersectingSides.subSet(bracketFrom, true, bracketTo, true);
-        if (DEBUG_MODE) {
-            System.out.printf("  Intersections with %s: brackets %s%n", horizontal, result);
+        final NavigableSet<Bracket> result = intersectingSides.subSet(bracketFrom, true, bracketTo, true);
+        if (RectangleSet.DEBUG_LEVEL >= 2) {
+            System.out.printf("  Intersections with %s: brackets%n%s", horizontal, toDebugString(result));
         }
         return result;
     }
 
+    Bracket lastIntersectionBeforeLeft() {
+        final Bracket bracketFrom = new Bracket(horizontal, horizontal.frame.lessVerticalSide, true);
+        return intersectingSides.lower(bracketFrom);
+    }
+
+
     private void addHorizontal(RectangleSet.HorizontalSide h) {
-        final RectangleSet.Bracket bracketFrom = new RectangleSet.Bracket(h, true);
-        final RectangleSet.Bracket bracketTo = new RectangleSet.Bracket(h, false);
+        final Bracket bracketFrom = new Bracket(h, h.frame.lessVerticalSide, true);
+        final Bracket bracketTo = new Bracket(h, h.frame.higherVerticalSide, false);
         // Note: theoretically it could be faster not to allocate brackets here,
         // but create them together with Side instance and store there as its fields.
         // But it is a bad idea, because can lead to problems with multithreading when
         // two threads modify Bracket.rightNestingDepth fields.
         // In any case, this solution requires comparable time for allocation
         // while the single pass of the scanning by the horizontal.
-        final RectangleSet.Bracket previousBracket = intersectingSides.lower(bracketFrom);
-        int nesting = previousBracket == null ? 1 : previousBracket.followingNestingDepth + 1;
-        bracketFrom.followingNestingDepth = nesting;
-        for (RectangleSet.Bracket bracket : intersectingSides.subSet(bracketFrom, false, bracketTo, false)) {
+        final Bracket previousBracket = intersectingSides.lower(bracketFrom);
+        int nesting = previousBracket == null ? 1 : previousBracket.followingCoveringDepth + 1;
+        bracketFrom.followingCoveringDepth = nesting;
+        for (Bracket bracket : intersectingSides.subSet(bracketFrom, false, bracketTo, false)) {
             // It is not the ideal O(log N) algorithm, but close to it, because this subset is usually very little
-            nesting = ++bracket.followingNestingDepth;
+            nesting = ++bracket.followingCoveringDepth;
         }
-        bracketTo.followingNestingDepth = nesting - 1;
-        intersectingSides.add(bracketTo);
+        bracketTo.followingCoveringDepth = nesting - 1;
         intersectingSides.add(bracketFrom);
+        intersectingSides.add(bracketTo);
     }
 
     private void removeHorizontal(RectangleSet.HorizontalSide h) {
-        final RectangleSet.Bracket bracketFrom = new RectangleSet.Bracket(h, true);
-        final RectangleSet.Bracket bracketTo = new RectangleSet.Bracket(h, false);
-        for (RectangleSet.Bracket bracket : intersectingSides.subSet(bracketFrom, false, bracketTo, false)) {
-            --bracket.followingNestingDepth;
+        final Bracket bracketFrom = new Bracket(h, h.frame.lessVerticalSide, true);
+        final Bracket bracketTo = new Bracket(h, h.frame.higherVerticalSide, false);
+        for (Bracket bracket : intersectingSides.subSet(bracketFrom, false, bracketTo, false)) {
+            --bracket.followingCoveringDepth;
         }
         final boolean containedFrom = intersectingSides.remove(bracketFrom);
         final boolean containedTo = intersectingSides.remove(bracketTo);
         assert containedFrom;
         assert containedTo;
+    }
+
+    private static String toDebugString(Collection<Bracket> brackets) {
+        StringBuilder sb = new StringBuilder();
+        for (Bracket bracket : brackets) {
+            sb.append(String.format("    %s%n", bracket));
+        }
+        return sb.toString();
     }
 
 }

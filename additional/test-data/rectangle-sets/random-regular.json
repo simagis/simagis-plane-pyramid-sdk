@@ -1,11 +1,9 @@
 {
   "algorithm": "regular",
-  "imageWidth": 4500,
-  "imageHeight": 2500,
   "frameWidth": 20,
   "frameHeight": 18,
-  "horizontalCount": 230,
-  "verticalCount": 120,
+  "horizontalCount": 50,
+  "verticalCount": 40,
   "overlap": 3,
   "maxError": 100,
   "randSeed": 157
