@@ -157,9 +157,8 @@ public class RectangleSet {
             if (!this.first && o.first) {
                 return 1;
             }
-            // In principle, we can return 0 here;
-            // but sorting along another coordinate may lead to better algorithms behaviour
-            // and (if necessary) better visualization.
+            // Sorting along another coordinate is necessary for searching several sides,
+            // which are really a single continuous segment
             final long thisFrom = this.boundFrom();
             final long otherFrom = o.boundFrom();
             if (thisFrom < otherFrom) {
