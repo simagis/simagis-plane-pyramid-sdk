@@ -63,38 +63,58 @@ class HorizontalBracketSet {
         // Theoretically, if it is null, we may just return false and do not anything; but we prefer
         // to remove the last brackets for self-testing goals (intersectingSides must become empty)
         final long newY = newHorizontal == null ? -157 : newHorizontal.boundCoord();
-        if (horizontal == null || newHorizontal == null
-            || newHorizontal.boundCoord() != horizontal.boundCoord())
-        {
-            RectangleSet.HorizontalSide h;
-            if (horizontal != null) {
-                int index = horizontalIndex;
-                while (index >= 0 && (h = allHorizontalSides.get(index)).boundCoord() == y) {
-                    if (onlyStrictIntersections) {
+        if (onlyStrictIntersections) {
+            if (horizontal == null || newHorizontal == null
+                || newHorizontal.boundCoord() != horizontal.boundCoord()
+                || newHorizontal.first != horizontal.first)
+            {
+                RectangleSet.HorizontalSide h;
+                if (horizontal != null) {
+                    int index = horizontalIndex;
+                    while (index >= 0
+                        && (h = allHorizontalSides.get(index)).boundCoord() == y
+                        && h.first == horizontal.first) {
                         if (h.isFirstOfTwoParallelSides()) {
                             addHorizontal(h);
                         }
-                    } else {
+                        index--;
+                    }
+                }
+                if (newHorizontal != null) {
+                    int index = horizontalIndex + 1;
+                    while (index < numberOfHorizontals
+                        && (h = allHorizontalSides.get(index)).boundCoord() == newY
+                        && h.first == newHorizontal.first) {
                         if (h.isSecondOfTwoParallelSides()) {
                             removeHorizontal(h);
                         }
+                        index++;
                     }
-                    index--;
                 }
             }
-            if (newHorizontal != null) {
-                int index = horizontalIndex + 1;
-                while (index < numberOfHorizontals && (h = allHorizontalSides.get(index)).boundCoord() == newY) {
-                    if (onlyStrictIntersections) {
+        } else {
+            if (horizontal == null || newHorizontal == null
+                || newHorizontal.boundCoord() != horizontal.boundCoord())
+            {
+                RectangleSet.HorizontalSide h;
+                if (horizontal != null) {
+                    int index = horizontalIndex;
+                    while (index >= 0 && (h = allHorizontalSides.get(index)).boundCoord() == y) {
                         if (h.isSecondOfTwoParallelSides()) {
                             removeHorizontal(h);
                         }
-                    } else {
-                        if (h.isFirstOfTwoParallelSides()) {
-                            addHorizontal(h);
-                        }
+                        index--;
                     }
-                    index++;
+                }
+                if (newHorizontal != null) {
+                    int index = horizontalIndex + 1;
+                    while (index < numberOfHorizontals && (h = allHorizontalSides.get(index)).boundCoord() == newY
+                        && h.first == newHorizontal.first) {
+                        if (h.isSecondOfTwoParallelSides()) {
+                            removeHorizontal(h);
+                        }
+                        index++;
+                    }
                 }
             }
         }
@@ -105,8 +125,10 @@ class HorizontalBracketSet {
             throw new AssertionError("Non-empty intersection set at the end of the loop");
         }
         if (RectangleSet.DEBUG_LEVEL >= 2) {
-            System.out.printf("  Horizontal #%d, y=%d: brackets%n%s",
-                horizontalIndex, y, toDebugString(intersectingSides));
+            System.out.printf("  Horizontal #%d, y=%d%s; brackets:%s",
+                horizontalIndex, y,
+                horizontal == null ? " (LOOP FINISHED)" : horizontal.first ? "(starting)" : " (ending)",
+                toDebugString(intersectingSides));
         }
         return horizontal != null;
     }
@@ -120,7 +142,7 @@ class HorizontalBracketSet {
         }
         final NavigableSet<Bracket> result = intersectingSides.subSet(bracketFrom, true, bracketTo, true);
         if (RectangleSet.DEBUG_LEVEL >= 2) {
-            System.out.printf("  Intersections with %s: brackets%n%s", horizontal, toDebugString(result));
+            System.out.printf("  Intersections with %s; brackets:%s", horizontal, toDebugString(result));
         }
         return result;
     }
@@ -165,7 +187,10 @@ class HorizontalBracketSet {
     }
 
     private static String toDebugString(Collection<Bracket> brackets) {
-        StringBuilder sb = new StringBuilder();
+        if (brackets.isEmpty()) {
+            return String.format(" NONE%n");
+        }
+        StringBuilder sb = new StringBuilder(String.format("%n"));
         for (Bracket bracket : brackets) {
             sb.append(String.format("    %s%n", bracket));
         }

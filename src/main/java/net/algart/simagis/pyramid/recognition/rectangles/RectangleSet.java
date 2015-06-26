@@ -126,7 +126,7 @@ public class RectangleSet {
 
         @Override
         public int compareTo(Side o) {
-            final long thisCoord = boundCoord();
+            final long thisCoord = this.boundCoord();
             final long otherCoord = o.boundCoord();
             if (thisCoord < otherCoord) {
                 return -1;
@@ -134,10 +134,32 @@ public class RectangleSet {
             if (thisCoord > otherCoord) {
                 return 1;
             }
+            // Lets we have two adjacent rectangles:
+            // AAAAAAAAAAAA
+            // AAAAAAAAAAAA
+            // AAAAAAAAAAAA
+            //      BBBBBBBBBBB
+            //      BBBBBBBBBBB
+            //      BBBBBBBBBBB
+            // where the top side of B lies at the same horizontal as the bottom side of A.
+            // The following checks provide the sorting order, when "opening" top side of B
+            // will be BEFORE the "closing" bottom side of A:
+            //      A top side (A start)
+            //      B top side (B start)
+            //      A bottom side (A finish)
+            //      B bottom side (B finish)
+            // It is important to consider such rectangles intersecting.
+            // Note: the Bracket class uses REVERSE logic.
+            if (this.first && !o.first) {
+                return -1;
+            }
+            if (!this.first && o.first) {
+                return 1;
+            }
             // In principle, we can return 0 here;
             // but sorting along another coordinate may lead to better algorithms behaviour
             // and (if necessary) better visualization.
-            final long thisFrom = boundFrom();
+            final long thisFrom = this.boundFrom();
             final long otherFrom = o.boundFrom();
             if (thisFrom < otherFrom) {
                 return -1;

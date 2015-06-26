@@ -1,11 +1,11 @@
 {
   "algorithm": "regular",
-  "frameMinWidth": 10,
-  "frameMaxWidth": 50,
-  "frameMinHeight": 18,
-  "frameMaxHeight": 40,
-  "horizontalCount": 33,
-  "verticalCount": 12,
+  "frameMinWidth": 5,
+  "frameMaxWidth": 30,
+  "frameMinHeight": 9,
+  "frameMaxHeight": 30,
+  "horizontalCount": 53,
+  "verticalCount": 22,
   "overlap": 3,
   "maxError": 10,
   "randSeed": 157

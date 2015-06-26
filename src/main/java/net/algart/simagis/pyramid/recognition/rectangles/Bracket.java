@@ -47,10 +47,6 @@ class Bracket implements Comparable<Bracket> {
         return intersectingSide.boundFrom() <= transversalCoord && intersectingSide.boundTo() >= transversalCoord;
     }
 
-    public boolean strictlyCovers(long transversalCoord) {
-        return intersectingSide.boundFrom() < transversalCoord && intersectingSide.boundTo() > transversalCoord;
-    }
-
     @Override
     public int compareTo(Bracket o) {
         if (this.coord < o.coord) {
@@ -59,28 +55,28 @@ class Bracket implements Comparable<Bracket> {
         if (this.coord > o.coord) {
             return 1;
         }
+        // Closing bracket is LESS than opening:
         if (!this.first && o.first) {
             return -1;
         }
         if (this.first && !o.first) {
             return 1;
         }
-        // Closing bracket is LESS than opening.
+        // We need some unique identifier to allow storing in TreeSet several brackets with the same x.
+        // We use the frame index for this goal; though it is equal for two sides of the same frame,
+        // these sides have different "left" field.
         if (this.frame.index < o.frame.index) {
             return -1;
         }
         if (this.frame.index > o.frame.index) {
             return 1;
         }
-        // We need unique identifier to allow storing in TreeSet several brackets with the same x.
-        // We use the frame index for this goal; though it is equal for two sides of the same frame,
-        // these sides have different "left" field.
         return 0;
     }
 
     @Override
     public String toString() {
         return (first ? "opening" : "closing") + " bracket " + coord + " at line " + containingSide
-            + ", covering level before it: " + followingCoveringDepth;
+            + ", covering level after it: " + followingCoveringDepth;
     }
 }
