@@ -398,10 +398,8 @@ public class RectangleSet {
     }
 
     public static class VerticalBoundaryLink extends BoundaryLink {
-        BoundaryLink previousNeighbour;
-        BoundaryLink nextNeighbour;
-        VerticalBoundaryLink previousVerticalNeighbour = null;
-        VerticalBoundaryLink nextVerticalNeighbour = null;
+        final BoundaryLink previousNeighbour;
+        final BoundaryLink nextNeighbour;
 
         private VerticalBoundaryLink(
             VerticalSide containingSide,
@@ -742,7 +740,8 @@ public class RectangleSet {
             }
         }
         for (int verticalIndex = 0, n = intersectingHorizontals.size(); verticalIndex < n; verticalIndex++) {
-            //TODO!! more correct processing by joning vertical sides, which are continuations of each other
+            //TODO!! more correct processing by joning vertical sides, which are continuations of each other:
+            //TODO!! here we can build vertical links completely
             List<HorizontalBoundaryLink> horizontalsAcrossSide = intersectingHorizontals.get(verticalIndex);
             final HorizontalBoundaryLink[] horizontals = horizontalsAcrossSide.toArray(
                 new HorizontalBoundaryLink[horizontalsAcrossSide.size()]);
@@ -750,20 +749,29 @@ public class RectangleSet {
             long last = 157;
             for (int k = 0; k < horizontals.length; k += 2) {
                 //TODO!! process vertical neighbours
-                long from = horizontals[k].coord;
-                long to = horizontals[k + 1].coord;
+                final HorizontalBoundaryLink horizontalFrom = horizontals[k];
+                final HorizontalBoundaryLink horizontalTo = horizontals[k + 1];
+                final long from = horizontalFrom.coord;
+                final long to = horizontalTo.coord;
                 assert k == 0 || from > last :
                     "Two horizontal links with the same ordinate " + from + "(" + last
                         + ") are incident with the same vertical side";
                 assert from < to :
                     "Empty vertical link #" + (k / 2) + ": " + from + ".." + to + ", vertical index " + verticalIndex;
                 final VerticalBoundaryLink link = new VerticalBoundaryLink(
-                    verticalSides.get(verticalIndex), from, to, horizontals[k], horizontals[k + 1]);
+                    verticalSides.get(verticalIndex), from, to, horizontalFrom, horizontalTo);
+                if (link.containingSide.first) {
+                    horizontalFrom.previousNeighbour = link;
+                    horizontalTo.previousNeighbour = link;
+                } else {
+                    horizontalFrom.nextNeighbour = link;
+                    horizontalTo.nextNeighbour = link;
+                }
                 resultingContainedBoundaryLinksForVerticalSides.get(verticalIndex).add(link);
                 last = to;
             }
         }
-        //TODO!! complete horizontal links
+        //TODO!! complete horizontal links for each horizontal, when their vertical neighbours not specified
     }
 
     private List<List<BoundaryLink>> doJoinBoundaries(
