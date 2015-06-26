@@ -162,16 +162,16 @@ public class RectangleSetTest {
                 connectedSet.findBoundaries();
                 if (testIndex == 0) {
                     for (RectangleSet.Frame frame : connectedSet.frames()) {
-                        draw(demo, frame.rectangle(), coordinateDivider, Color.WHITE, Color.DARK_GRAY);
-                    }
-                    for (RectangleSet.Side side : connectedSet.horizontalSides()) {
-                        for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                            draw(demo, link.sidePart(), coordinateDivider, Color.GREEN, Color.BLACK);
-                        }
+                        draw(demo, frame.rectangle(), coordinateDivider, Color.DARK_GRAY, Color.BLUE);
                     }
                     for (RectangleSet.Side side : connectedSet.verticalSides()) {
                         for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
-                            draw(demo, link.sidePart(), coordinateDivider, Color.YELLOW, Color.BLACK);
+                            draw(demo, link.sidePart(), coordinateDivider, Color.RED, Color.BLACK, 0);
+                        }
+                    }
+                    for (RectangleSet.Side side : connectedSet.horizontalSides()) {
+                        for (RectangleSet.BoundaryLink link : side.containedBoundaryLinks()) {
+                            draw(demo, link.sidePart(), coordinateDivider, Color.GREEN, Color.BLACK, 1);
                         }
                     }
                     final File f = new File(demoFolder, rectanglesFile.getName() + ".component" + (k + 1) + ".bmp");
@@ -197,10 +197,23 @@ public class RectangleSetTest {
         Color borderColor,
         Color innerColor)
     {
+        draw(demo, area, coordinateDivider, borderColor, innerColor, null);
+    }
+    private static void draw(
+        List<Matrix<? extends UpdatablePArray>> demo,
+        IRectangularArea area,
+        double coordinateDivider,
+        Color borderColor,
+        Color innerColor,
+        Integer chosenColorComponent)
+    {
         final IRectangularArea divided = IRectangularArea.valueOf(
             area.min().multiply(1.0 / coordinateDivider),
             area.max().multiply(1.0 / coordinateDivider));
-        for (int k = 0; k < demo.size(); k++) {
+        for (int k = chosenColorComponent == null ? 0 : chosenColorComponent;
+             k < (chosenColorComponent == null ? demo.size() : chosenColorComponent + 1);
+             k++)
+        {
             int borderValue = k == 0 ? borderColor.getRed() : k == 1 ? borderColor.getGreen() : borderColor.getBlue();
             int innerValue = k == 0 ? innerColor.getRed() : k == 1 ? innerColor.getGreen() : innerColor.getBlue();
             demo.get(k).subMatrix(divided, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(borderValue);

@@ -68,7 +68,8 @@ public class RectangleSet {
     public static abstract class Side implements Comparable<Side> {
         final Frame frame;
         final boolean first;
-        List<BoundaryLink> containedBoundaryLinks = null;
+        int indexInSortedList = -1;
+        List<? extends BoundaryLink> containedBoundaryLinks = null;
 
         private Side(Frame frame, boolean first) {
             assert frame != null;
@@ -173,7 +174,32 @@ public class RectangleSet {
         @Override
         public String toString() {
             return (isHorizontal() ? (first ? "top" : "bottom") : (first ? "left" : "right"))
-                + " side of frame #" + frame.index;
+                + " side of frame #" + frame.index + ": " + boundFrom() + ".." + boundTo() + " at " + boundCoord();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            Side side = (Side) o;
+
+            if (first != side.first) {
+                return false;
+            }
+            return frame.equals(side.frame);
+            // Note: we do not try to implement equals/hashCode in Frame class
+        }
+
+        @Override
+        public int hashCode() {
+            int result = frame.hashCode();
+            result = 31 * result + (first ? 1 : 0);
+            return result;
         }
     }
 
@@ -239,27 +265,25 @@ public class RectangleSet {
         }
     }
 
-    public static abstract class BoundaryLink {
+    public static abstract class BoundaryLink implements Comparable<BoundaryLink> {
         final Side containingSide;
-        final Side firstTransveralSide;
-        final Side secondTransveralSide;
+        final long coord;
         final long from;
         final long to;
 
         private BoundaryLink(
             Side containingSide,
-            Side firstTransveralSide,
-            Side secondTransveralSide)
+            long from,
+            long to)
         {
-            assert containingSide != null && firstTransveralSide != null && secondTransveralSide != null;
+            assert containingSide != null;
             this.containingSide = containingSide;
-            this.firstTransveralSide = firstTransveralSide;
-            this.secondTransveralSide = secondTransveralSide;
-            this.from = firstTransveralSide.boundCoord();
-            this.to = secondTransveralSide.boundCoord();
+            this.coord = containingSide.boundCoord();
             assert from >= containingSide.boundFrom();
             assert to <= containingSide.boundTo();
             assert from <= to;
+            this.from = from;
+            this.to = to;
         }
 
         public Side containingSide() {
@@ -273,8 +297,8 @@ public class RectangleSet {
          *
          * @return the perpendicular coordinate of this link + 0.5
          */
-        public long transversal() {
-            return containingSide.boundCoord();
+        public long coord() {
+            return coord;
         }
 
         /**
@@ -300,15 +324,69 @@ public class RectangleSet {
         }
 
         public abstract IRectangularArea sidePart();
+
+        @Override
+        public int compareTo(BoundaryLink o) {
+            if (this.coord < o.coord) {
+                return -1;
+            }
+            if (this.coord > o.coord) {
+                return 1;
+            }
+            if (this.from < o.from) {
+                return -1;
+            }
+            if (this.from > o.from) {
+                return 1;
+            }
+            return 0;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            BoundaryLink that = (BoundaryLink) o;
+            if (from != that.from) {
+                return false;
+            }
+            if (to != that.to) {
+                return false;
+            }
+            return containingSide.equals(that.containingSide);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = containingSide.hashCode();
+            result = 31 * result + (int) (from ^ (from >>> 32));
+            result = 31 * result + (int) (to ^ (to >>> 32));
+            return result;
+        }
     }
 
-    public static class HorizontalBoundaryLink extends BoundaryLink {
+    private static class HorizontalBoundaryLink extends BoundaryLink {
+        final Side firstTransversalSide;
+        final Side secondTransversalSide;
+        // - these two fields are necessary only while constructing the boundary
+        BoundaryLink previousNeighbour = null;
+        BoundaryLink nextNeighbour = null;
+        HorizontalBoundaryLink previousHorizontalNeighbour = null;
+        HorizontalBoundaryLink nextHorizontalNeighbour = null;
+
         private HorizontalBoundaryLink(
             HorizontalSide containingSide,
-            VerticalSide firstTransveralSide,
-            VerticalSide secondTransveralSide)
+            VerticalSide firstTransversalSide,
+            VerticalSide secondTransversalSide)
         {
-            super(containingSide, firstTransveralSide, secondTransveralSide);
+            super(containingSide, firstTransversalSide.boundCoord(), secondTransversalSide.boundCoord());
+            this.firstTransversalSide = firstTransversalSide;
+            this.secondTransversalSide = secondTransversalSide;
         }
 
         @Override
@@ -320,12 +398,21 @@ public class RectangleSet {
     }
 
     public static class VerticalBoundaryLink extends BoundaryLink {
+        BoundaryLink previousNeighbour;
+        BoundaryLink nextNeighbour;
+        VerticalBoundaryLink previousVerticalNeighbour = null;
+        VerticalBoundaryLink nextVerticalNeighbour = null;
+
         private VerticalBoundaryLink(
             VerticalSide containingSide,
-            HorizontalSide firstTransveralSide,
-            HorizontalSide secondTransveralSide)
+            long from,
+            long to,
+            BoundaryLink previousNeighbour,
+            BoundaryLink nextNeighbour)
         {
-            super(containingSide, firstTransveralSide, secondTransveralSide);
+            super(containingSide, from, to);
+            this.previousNeighbour = previousNeighbour;
+            this.nextNeighbour = nextNeighbour;
         }
 
         @Override
@@ -439,18 +526,16 @@ public class RectangleSet {
             }
         }
         long t1 = System.nanoTime();
-        final List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides = new ArrayList<List<BoundaryLink>>();
-        for (int k = 0, n = horizontalSides.size(); k < n; k++) {
-            containedBoundaryLinksForHorizontalSides.add(new ArrayList<BoundaryLink>());
-        }
-        final List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides = new ArrayList<List<BoundaryLink>>();
-        for (int k = 0, n = verticalSides.size(); k < n; k++) {
-            containedBoundaryLinksForVerticalSides.add(new ArrayList<BoundaryLink>());
-        }
+        final List<List<HorizontalBoundaryLink>> containedBoundaryLinksForHorizontalSides =
+            createListOfLists(horizontalSides.size());
+        final List<List<VerticalBoundaryLink>> containedBoundaryLinksForVerticalSides =
+            createListOfLists(verticalSides.size());
         long t2 = System.nanoTime();
-        doFindHorizontalBoundaries(containedBoundaryLinksForHorizontalSides);
+        findHorizontalBoundaries(containedBoundaryLinksForHorizontalSides);
         long t3 = System.nanoTime();
-        doFindVerticalBoundaries(containedBoundaryLinksForHorizontalSides, containedBoundaryLinksForVerticalSides);
+//        convertHorizontalLinkInfoToAllBoundaryLinkLists(
+//            containedBoundaryLinksForHorizontalSides,
+//            containedBoundaryLinksForVerticalSides);
         long t4 = System.nanoTime();
         final List<List<BoundaryLink>> result =
             doJoinBoundaries(containedBoundaryLinksForHorizontalSides, containedBoundaryLinksForVerticalSides);
@@ -517,6 +602,12 @@ public class RectangleSet {
         Collections.sort(verticalSides);
         long t2 = System.nanoTime();
         synchronized (lock) {
+            for (int k = 0, n = horizontalSides.size(); k < n; k++) {
+                horizontalSides.get(k).indexInSortedList = k;
+            }
+            for (int k = 0, n = verticalSides.size(); k < n; k++) {
+                verticalSides.get(k).indexInSortedList = k;
+            }
             this.horizontalSides = horizontalSides;
             this.verticalSides = verticalSides;
         }
@@ -600,8 +691,8 @@ public class RectangleSet {
         }
     }
 
-    private void doFindHorizontalBoundaries(
-        List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
+    private void findHorizontalBoundaries(
+        List<List<HorizontalBoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
     {
         assert !frames.isEmpty();
         final HorizontalBracketSet bracketSet = new HorizontalBracketSet(horizontalSides, true);
@@ -632,17 +723,52 @@ public class RectangleSet {
         }
     }
 
-    private void doFindVerticalBoundaries(
-        List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides,
-        List<List<BoundaryLink>> resultingContainedBoundaryLinksForVerticalSides)
+    private void convertHorizontalLinkInfoToAllBoundaryLinkLists(
+        List<List<HorizontalBoundaryLink>> completedContainedBoundaryLinksForHorizontalSides,
+        List<List<VerticalBoundaryLink>> resultingContainedBoundaryLinksForVerticalSides)
     {
         assert !frames.isEmpty();
-        //TODO!!
+        List<List<HorizontalBoundaryLink>> intersectingHorizontals = createListOfLists(verticalSides.size());
+        for (List<HorizontalBoundaryLink> linksOnSide : completedContainedBoundaryLinksForHorizontalSides) {
+            HorizontalSide side = null;
+            for (HorizontalBoundaryLink link : linksOnSide) {
+                if (side == null) {
+                    side = (HorizontalSide) link.containingSide;
+                } else {
+                    assert side == link.containingSide;
+                }
+                intersectingHorizontals.get(link.firstTransversalSide.indexInSortedList).add(link);
+                intersectingHorizontals.get(link.secondTransversalSide.indexInSortedList).add(link);
+            }
+        }
+        for (int verticalIndex = 0, n = intersectingHorizontals.size(); verticalIndex < n; verticalIndex++) {
+            //TODO!! more correct processing by joning vertical sides, which are continuations of each other
+            List<HorizontalBoundaryLink> horizontalsAcrossSide = intersectingHorizontals.get(verticalIndex);
+            final HorizontalBoundaryLink[] horizontals = horizontalsAcrossSide.toArray(
+                new HorizontalBoundaryLink[horizontalsAcrossSide.size()]);
+            Arrays.sort(horizontals);
+            long last = 157;
+            for (int k = 0; k < horizontals.length; k += 2) {
+                //TODO!! process vertical neighbours
+                long from = horizontals[k].coord;
+                long to = horizontals[k + 1].coord;
+                assert k == 0 || from > last :
+                    "Two horizontal links with the same ordinate " + from + "(" + last
+                        + ") are incident with the same vertical side";
+                assert from < to :
+                    "Empty vertical link #" + (k / 2) + ": " + from + ".." + to + ", vertical index " + verticalIndex;
+                final VerticalBoundaryLink link = new VerticalBoundaryLink(
+                    verticalSides.get(verticalIndex), from, to, horizontals[k], horizontals[k + 1]);
+                resultingContainedBoundaryLinksForVerticalSides.get(verticalIndex).add(link);
+                last = to;
+            }
+        }
+        //TODO!! complete horizontal links
     }
 
     private List<List<BoundaryLink>> doJoinBoundaries(
-        List<List<BoundaryLink>> containedBoundaryLinksForHorizontalSides,
-        List<List<BoundaryLink>> containedBoundaryLinksForVerticalSides)
+        List<List<HorizontalBoundaryLink>> containedBoundaryLinksForHorizontalSides,
+        List<List<VerticalBoundaryLink>> containedBoundaryLinksForVerticalSides)
     {
         assert !frames.isEmpty();
         //TODO!!
@@ -653,7 +779,7 @@ public class RectangleSet {
         HorizontalBracketSet bracketSet,
         VerticalSide firstTransveralSide,
         VerticalSide secondTransveralSide,
-        List<List<BoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
+        List<List<HorizontalBoundaryLink>> resultingContainedBoundaryLinksForHorizontalSides)
     {
         final HorizontalBoundaryLink link = new HorizontalBoundaryLink(
             bracketSet.horizontal,
@@ -662,6 +788,14 @@ public class RectangleSet {
         if (link.from < link.to) {
             resultingContainedBoundaryLinksForHorizontalSides.get(bracketSet.horizontalIndex).add(link);
         }
+    }
+
+    private static <T> List<List<T>> createListOfLists(int n) {
+        final List<List<T>> result = new ArrayList<List<T>>();
+        for (int k = 0; k < n; k++) {
+            result.add(new ArrayList<T>());
+        }
+        return result;
     }
 
     private static List<Frame> checkAndConvertToFrames(Collection<IRectangularArea> rectangles) {
@@ -683,5 +817,6 @@ public class RectangleSet {
         }
         return frames;
     }
+
 }
 

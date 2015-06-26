@@ -106,12 +106,12 @@ class HorizontalBracketSet {
                         index--;
                     }
                 }
+
                 if (newHorizontal != null) {
                     int index = horizontalIndex + 1;
-                    while (index < numberOfHorizontals && (h = allHorizontalSides.get(index)).boundCoord() == newY
-                        && h.first == newHorizontal.first) {
-                        if (h.isSecondOfTwoParallelSides()) {
-                            removeHorizontal(h);
+                    while (index < numberOfHorizontals && (h = allHorizontalSides.get(index)).boundCoord() == newY) {
+                        if (h.isFirstOfTwoParallelSides()) {
+                            addHorizontal(h);
                         }
                         index++;
                     }
@@ -152,6 +152,10 @@ class HorizontalBracketSet {
         return intersectingSides.lower(bracketFrom);
     }
 
+    Bracket firstIntersectionAfterRight() {
+        final Bracket bracketTo = new Bracket(horizontal, horizontal.frame.higherVerticalSide, true);
+        return intersectingSides.higher(bracketTo);
+    }
 
     private void addHorizontal(RectangleSet.HorizontalSide h) {
         final Bracket bracketFrom = new Bracket(h, h.frame.lessVerticalSide, true);
