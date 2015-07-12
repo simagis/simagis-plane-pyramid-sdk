@@ -25,6 +25,7 @@
 package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.*;
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 import net.algart.simagis.pyramid.PlanePyramidTools;
@@ -129,6 +130,13 @@ public final class CombinedPlanePyramidSource
         return existInOverriding(0) ?
             overridingParent.zeroLevelActualRectangles() :
             mainParent.zeroLevelActualRectangles();
+    }
+
+    @Override
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        return existInOverriding(0) ?
+            overridingParent.zeroLevelActualAreaBoundaries() :
+            mainParent.zeroLevelActualAreaBoundaries();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY) {

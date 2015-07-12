@@ -26,6 +26,7 @@ package net.algart.simagis.pyramid;
 
 import net.algart.arrays.Matrix;
 import net.algart.arrays.PArray;
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 
 import java.nio.channels.NotYetConnectedException;
@@ -69,6 +70,10 @@ public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidS
 
     public List<IRectangularArea> zeroLevelActualRectangles() {
         return parent().zeroLevelActualRectangles();
+    }
+
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        return parent().zeroLevelActualAreaBoundaries();
     }
 
     public Matrix<? extends PArray> readSubMatrix(

@@ -212,7 +212,7 @@ public class PlanePyramidTools {
     }
 
     public static void fillMatrix(Matrix<? extends UpdatablePArray> m, Color color) {
-        long bandCount = m.dim(0);
+        final long bandCount = m.dim(0);
         if (bandCount != 1 && bandCount != 3 && bandCount != 4) {
             return; // strange call
         }
@@ -233,7 +233,23 @@ public class PlanePyramidTools {
     }
 
     public static void fillMatrix(Matrix<? extends UpdatablePArray> m, double[] color) {
+        final long bandCount = m.dim(0);
         final UpdatablePArray array = m.array();
+        if (bandCount != color.length) {
+            if (bandCount == 1) {
+                if (color.length >= 3) {
+                    color = new double[] {0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2]};
+                } else {
+                    color = new double[] {color[0]};
+                }
+            } else {
+                double[] newColor = new double[(int) bandCount];
+                for (int k = 0; k < newColor.length; k++) {
+                    newColor[k] = k < color.length ? color[k] : color[color.length - 1];
+                }
+                color = newColor;
+            }
+        }
         final PArray pattern = asBackground(m.elementType(), m.dim(1), m.dim(2), color).array();
         if (Arrays.isNCopies(pattern)) {
             array.copy(pattern);

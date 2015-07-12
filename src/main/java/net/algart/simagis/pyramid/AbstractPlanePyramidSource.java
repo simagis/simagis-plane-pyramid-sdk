@@ -186,6 +186,24 @@ public abstract class AbstractPlanePyramidSource
         return null;
     }
 
+    @Override
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        final List<IRectangularArea> rectangles = zeroLevelActualRectangles();
+        if (rectangles == null) {
+            return null;
+        }
+        final List<List<List<IPoint>>> result = new ArrayList<List<List<IPoint>>>();
+        for (IRectangularArea rectangle : rectangles) {
+            final List<IPoint> vertices = new ArrayList<IPoint>();
+            vertices.add(rectangle.min());
+            vertices.add(IPoint.valueOf(rectangle.max(0), rectangle.min(1)));
+            vertices.add(rectangle.max());
+            vertices.add(IPoint.valueOf(rectangle.min(0), rectangle.max(1)));
+            result.add(Collections.singletonList(vertices));
+        }
+        return result;
+    }
+
     // Note: this implementation cannot read data outside the full matrix
     public Matrix<? extends PArray> readSubMatrix(
         int resolutionLevel, long fromX, long fromY, long toX, long toY)

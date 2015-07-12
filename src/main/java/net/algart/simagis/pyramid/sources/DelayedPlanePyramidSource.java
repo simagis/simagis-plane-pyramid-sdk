@@ -25,6 +25,7 @@
 package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.*;
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 
@@ -197,6 +198,16 @@ public final class DelayedPlanePyramidSource
                 + "because the parent is not set yet");
         }
         return parent.zeroLevelActualRectangles();
+    }
+
+    @Override
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        PlanePyramidSource parent = getParent();
+        if (parent == null) {
+            throw new UnsupportedOperationException("zeroLevelActualAreaBoundaries() method is not supported yet, "
+                + "because the parent is not set yet");
+        }
+        return parent.zeroLevelActualAreaBoundaries();
     }
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)

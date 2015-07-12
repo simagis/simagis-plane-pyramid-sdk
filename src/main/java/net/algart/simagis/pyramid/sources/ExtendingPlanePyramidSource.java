@@ -220,10 +220,10 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
                 System.out.printf("Creating default zero-level actual rectangle: %s%n", parentRectangles);
             }
         }
+        final IPoint shift = IPoint.valueOf(positionXInExtendedMatrix, positionYInExtendedMatrix);
         final List<IRectangularArea> result = new ArrayList<IRectangularArea>(parentRectangles.size());
         for (IRectangularArea parentRectangle : parentRectangles) {
-            final IRectangularArea shiftedRectangle = parentRectangle.shift(IPoint.valueOf(
-                positionXInExtendedMatrix, positionYInExtendedMatrix));
+            final IRectangularArea shiftedRectangle = parentRectangle.shift(shift);
             if (DEBUG_LEVEL >= 2) {
                 System.out.printf("Shifting zero-level actual rectangle %s by (%d,%d)%n",
                     parentRectangle, positionXInExtendedMatrix, positionYInExtendedMatrix);
@@ -232,6 +232,31 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
         }
         return result;
     }
+
+    @Override
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        final List<List<List<IPoint>>> boundaries = parent.zeroLevelActualAreaBoundaries();
+        if (boundaries == null) {
+            return super.zeroLevelActualAreaBoundaries();
+        }
+        final IPoint shift = IPoint.valueOf(positionXInExtendedMatrix, positionYInExtendedMatrix);
+        final List<List<List<IPoint>>> result = new ArrayList<List<List<IPoint>>>();
+        for (List<List<IPoint>> area : boundaries) {
+            final List<List<IPoint>> shiftedArea = new ArrayList<List<IPoint>>();
+            for (List<IPoint> boundary : area) {
+                final List<IPoint> shiftedBoundary = new ArrayList<IPoint>();
+                for (IPoint p : boundary) {
+                    shiftedBoundary.add(p.add(shift));
+                }
+                if (DEBUG_LEVEL >= 2) {
+                    System.out.printf("Shifting zero-level actual area boundary %s by (%d,%d)%n",
+                        boundary, positionXInExtendedMatrix, positionYInExtendedMatrix);
+                }
+                shiftedArea.add(shiftedBoundary);
+            }
+            result.add(shiftedArea);
+        }
+        return result;    }
 
     @Override
     public boolean isSpecialMatrixSupported(SpecialImageKind kind) {

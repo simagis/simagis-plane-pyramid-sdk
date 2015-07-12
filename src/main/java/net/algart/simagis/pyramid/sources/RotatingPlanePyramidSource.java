@@ -139,6 +139,14 @@ public final class RotatingPlanePyramidSource
             return new long[] {newFromX, newFromY, newToX, newToY};
         }
 
+        public IPoint correctPoint(
+            long imageWidth, long imageHeight, IPoint point)
+        {
+            long rotatedX = cos * point.x() + sin * point.y() + bX(imageWidth);
+            long rotatedY = -sin * point.x() + cos * point.y() + bY(imageHeight);
+            return IPoint.valueOf(rotatedX, rotatedY);
+        }
+
         public IRectangularArea correctRectangle(long imageWidth, long imageHeight, IRectangularArea rectangle) {
             long fromX = rectangle.min(0);
             long fromY = rectangle.min(1);
@@ -259,12 +267,15 @@ public final class RotatingPlanePyramidSource
     }
 
     public List<IRectangularArea> zeroLevelActualRectangles() {
+        final List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
+        if (parentRectangles == null) {
+            return null;
+        }
         final long[] rotatedDim = this.dimensions(0);
         final long rotatedWidth = rotatedDim[DIM_WIDTH];
         final long rotatedHeight = rotatedDim[DIM_HEIGHT];
         final RotationMode reverseRotation = rotationMode.reverse();
         // Note: here we have reverse task in comparison with readSubMatrix
-        final List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
         final List<IRectangularArea> result = new ArrayList<IRectangularArea>(parentRectangles.size());
         for (IRectangularArea parentRectangle : parentRectangles) {
             final IRectangularArea rotatedRectangle = reverseRotation.correctRectangle(
@@ -274,6 +285,31 @@ public final class RotatingPlanePyramidSource
                     parentRectangle, rotationMode.rotationInDegrees, rotatedRectangle, rotatedWidth, rotatedHeight);
             }
             result.add(rotatedRectangle);
+        }
+        return result;
+    }
+
+    @Override
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        final List<List<List<IPoint>>> boundaries = parent.zeroLevelActualAreaBoundaries();
+        if (boundaries == null) {
+            return null;
+        }
+        final long[] rotatedDim = this.dimensions(0);
+        final long rotatedWidth = rotatedDim[DIM_WIDTH];
+        final long rotatedHeight = rotatedDim[DIM_HEIGHT];
+        final RotationMode reverseRotation = rotationMode.reverse();
+        final List<List<List<IPoint>>> result = new ArrayList<List<List<IPoint>>>();
+        for (List<List<IPoint>> area : boundaries) {
+            final List<List<IPoint>> rotatedArea = new ArrayList<List<IPoint>>();
+            for (List<IPoint> boundary : area) {
+                final List<IPoint> rotatedBoundary = new ArrayList<IPoint>();
+                for (IPoint p : boundary) {
+                    rotatedBoundary.add(reverseRotation.correctPoint(rotatedWidth, rotatedHeight, p));
+                }
+                rotatedArea.add(rotatedBoundary);
+            }
+            result.add(rotatedArea);
         }
         return result;
     }

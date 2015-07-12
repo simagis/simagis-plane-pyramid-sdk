@@ -28,6 +28,7 @@ import net.algart.arrays.Arrays;
 import net.algart.arrays.Matrices;
 import net.algart.arrays.Matrix;
 import net.algart.arrays.PArray;
+import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.math.functions.Func;
 
@@ -299,7 +300,7 @@ public interface PlanePyramidSource {
     public Class<?> elementType() throws UnsupportedOperationException;
 
     /**
-     * <p>Returns a set of all areas (2D rectangles), filled by actual data, at the zero level.
+     * <p>Returns a set of all areas, which are 2D rectangles, filled by actual data, at the zero level.
      * All other areas should be considered to be a background and may be not passed to
      * image analysis algorithms.</p>
      *
@@ -309,10 +310,39 @@ public interface PlanePyramidSource {
      * from (0,&nbsp;0) to <nobr>({@link #dimensions(int) dimensions}(0)[{@link #DIM_WIDTH}]&minus;1,
      * {@link #dimensions(int) dimensions}(0)[{@link #DIM_HEIGHT}]&minus;1).</p>
      *
-     * @return a set of all areas (2D rectangles), filled by actual data, at the level #0,
+     * @return a list of all areas (2D rectangles), filled by actual data, at the level #0,
      * or <tt>null</tt> if it is not supported.
      */
     public List<IRectangularArea> zeroLevelActualRectangles();
+
+    /**
+     * <p>Returns a set of all areas, filled by actual data, at the zero level, in a form of a list
+     * of polygons, represented by their consecutive vertices.
+     * All other areas should be considered to be a background and may be not passed to
+     * image analysis algorithms.</p>
+     *
+     * <p>More precisely, each element <b>P</b> of the returned list, i.e. <tt>List&lt;List&lt;IPoint&gt;&gt;</tt>,
+     * corresponds to one connected 2D polygon. The structure of this element <b>P</b> is the following:</p>
+     *
+     * <ul>
+     * <li><b>P</b><tt>.get(0)</tt> is the list of sequential vertices of the polygon; each vertex
+     * appears in this list only once;</li>
+     * <li><b>P</b><tt>.get(1)</tt>, <b>P</b><tt>.get(2)</tt>, ..., <b>P</b><tt>.get(m)</tt>, where
+     * <tt>m=</tt><b>P</b><tt>.size()</tt> describes sequential vertices to all polygonal holes,
+     * that may appear in the polygon. If the polygon has no holes (very probable case) or if
+     * their detection is not supported, the list <b>P</b> contains only 1 element (<tt>m=1</tt>).
+     * </li>
+     * </ul>
+     *
+     * <p>The default implementation in {@link AbstractPlanePyramidSource} calls {@link #zeroLevelActualRectangles()}
+     * Each rectangle is converted to the list <b>P</b>, containing only 1 element, and this element
+     * is the list of 4 vertices of the rectangle. If {@link #zeroLevelActualRectangles()} returns <tt>null</tt>,
+     * this method also returns <tt>null</tt>.</p>
+     *
+     * @return a list of all polygonal areas, filled by actual data, at the level #0, and their
+     * holes (if they exist), or <tt>null</tt> if this ability is not supported.
+     */
+    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries();
 
     public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException;
