@@ -328,18 +328,18 @@ public interface PlanePyramidSource {
      * <li><b>P</b><tt>.get(0)</tt> is the list of sequential vertices of the polygon; each vertex
      * appears in this list only once;</li>
      * <li><b>P</b><tt>.get(1)</tt>, <b>P</b><tt>.get(2)</tt>, ..., <b>P</b><tt>.get(m)</tt>, where
-     * <tt>m=</tt><b>P</b><tt>.size()</tt> describes sequential vertices to all polygonal holes,
+     * <tt>m=</tt><b>P</b><tt>.size()</tt> describe sequential vertices of all polygonal holes,
      * that may appear in the polygon. If the polygon has no holes (very probable case) or if
      * their detection is not supported, the list <b>P</b> contains only 1 element (<tt>m=1</tt>).
      * </li>
      * </ul>
      *
      * <p>The default implementation in {@link AbstractPlanePyramidSource} calls {@link #zeroLevelActualRectangles()}
-     * Each rectangle is converted to the list <b>P</b>, containing only 1 element, and this element
+     * and converts each rectangle to the list <b>P</b>, containing only 1 element, and this element
      * is the list of 4 vertices of the rectangle. If {@link #zeroLevelActualRectangles()} returns <tt>null</tt>,
-     * this method also returns <tt>null</tt>.</p>
+     * the default implementation also returns <tt>null</tt>.</p>
      *
-     * @return a list of all polygonal areas, filled by actual data, at the level #0, and their
+     * @return the list of all polygonal areas, filled by actual data, at the level #0, and their
      * holes (if they exist), or <tt>null</tt> if this ability is not supported.
      */
     public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries();
