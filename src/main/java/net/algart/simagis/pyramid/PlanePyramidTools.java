@@ -188,7 +188,7 @@ public class PlanePyramidTools {
                 }
 
                 @Override
-                public double get(double x0, double x1, double x2, double x3) {
+                public double get(double x0, double x1, double x2) {
                     return filler[(int) x0];
                 }
             };
@@ -235,6 +235,9 @@ public class PlanePyramidTools {
     public static void fillMatrix(Matrix<? extends UpdatablePArray> m, double[] color) {
         final long bandCount = m.dim(0);
         final UpdatablePArray array = m.array();
+        if (bandCount > 32) {
+            throw new IllegalArgumentException("This method should be not used for true 3D matrices");
+        }
         if (bandCount != color.length) {
             if (bandCount == 1) {
                 if (color.length >= 3) {
@@ -250,18 +253,29 @@ public class PlanePyramidTools {
                 color = newColor;
             }
         }
+        assert bandCount == color.length;
         final PArray pattern = asBackground(m.elementType(), m.dim(1), m.dim(2), color).array();
+        assert pattern.length() % color.length == 0;
         if (Arrays.isNCopies(pattern)) {
             array.copy(pattern);
         } else {
-            // current version of asBackground makes not too efficient matrix,
-            // so an attempt to copy the whole pattern could work relatively slow
             final long n = pattern.length();
-            final long blockLen = 1024L * (long) color.length;
-            final long initialLen = Math.min(n, blockLen);
-            array.copy(pattern.subArray(0, initialLen));
-            for (long p = blockLen; p < n; p += blockLen) {
-                array.copy(p, 0, Math.min(blockLen, n - p));
+            final int blockLen = 1024 * color.length;
+            final int initialLen = (int) Math.min(n, blockLen);
+            if (initialLen == n) {
+                array.copy(pattern);
+            } else {
+                // Current version of asBackground makes not too efficient matrix,
+                // so an attempt to copy the whole pattern could work relatively slow.
+                final Object buffer = pattern.newJavaArray(initialLen);
+                pattern.getData(0, buffer, 0, initialLen);
+                // Note: we should not try to use, as a work buffer, the beginning of the resulting array itself.
+                // Some forms of arrays are "write-only", for example, underlying arrays of large submatrices,
+                // which do not fully lie inside the containing matrix: we may write to the elements outside
+                // the original matrix, but this will not have an effect.
+                for (long p = 0; p < n; p += blockLen) {
+                    array.setData(p, buffer, 0, (int) Math.min(blockLen, n - p));
+                }
             }
         }
     }
