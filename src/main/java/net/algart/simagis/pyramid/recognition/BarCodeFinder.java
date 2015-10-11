@@ -85,6 +85,7 @@ public class BarCodeFinder {
             System.out.printf("Usage: %s image1.png image2.png...%n", BarCodeFinder.class.getName());
             return;
         }
+        int successfullCount = 0;
         for (String arg : args) {
             final File file = new File(arg);
             System.out.printf("Loading image from %s...%n", file);
@@ -99,10 +100,12 @@ public class BarCodeFinder {
             if (finder.isFound()) {
                 System.out.printf("BAR CODE FOUND (format %s): %s (%.3f ms)%n",
                     finder.getBarCodeFormat(), finder.getBarCodeText(), (t2 - t1) * 1e-6);
+                successfullCount++;
             } else {
                 System.out.printf("Bar code not found! (%.3f ms)%n", (t2 - t1) * 1e-6);
             }
             System.out.println();
         }
+        System.out.printf("%d successfull recognitions from %d%n", successfullCount, args.length);
     }
 }
