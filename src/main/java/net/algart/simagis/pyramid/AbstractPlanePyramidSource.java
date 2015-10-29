@@ -53,7 +53,7 @@ public abstract class AbstractPlanePyramidSource
         "net.algart.simagis.pyramid.tileCachingMemory", 67108864));
     // 64 MB (+1 possible additional tile)
 
-    public static enum TileDirection {
+    public enum TileDirection {
         RIGHT_DOWN()
             {
                 @Override
@@ -126,7 +126,7 @@ public abstract class AbstractPlanePyramidSource
         abstract IRectangularArea findTile(long tileDim, long dimX, long dimY, long x, long y);
     }
 
-    public static enum LabelPosition {
+    public enum LabelPosition {
         LEFT_OF_THE_MAP,
         RIGHT_OF_THE_MAP
     }
@@ -507,7 +507,6 @@ public abstract class AbstractPlanePyramidSource
         if (labelPosition == null) {
             throw new NullPointerException("Null labelPosition");
         }
-        final boolean rightOfTheMap = labelPosition == LabelPosition.RIGHT_OF_THE_MAP;
         long t1 = System.nanoTime();
         final MapOrLabelParallelReader labelReader = new MapOrLabelParallelReader(SpecialImageKind.LABEL_ONLY_IMAGE);
         final MapOrLabelParallelReader mapReader = new MapOrLabelParallelReader(SpecialImageKind.MAP_IMAGE);
@@ -538,7 +537,7 @@ public abstract class AbstractPlanePyramidSource
         long t3 = System.nanoTime();
         Matrices.copy(null,
             result.subMatr(
-                0, rightOfTheMap ? 0 : resultDimX - mapDimX, 0,
+                0, labelPosition == LabelPosition.RIGHT_OF_THE_MAP ? 0 : resultDimX - mapDimX, 0,
                 bandCount, mapDimX, mapDimY),
             mapReader.data
         );
@@ -546,7 +545,7 @@ public abstract class AbstractPlanePyramidSource
         Matrices.resize(null,
             Matrices.ResizingMethod.POLYLINEAR_AVERAGING,
             result.subMatr(
-                0, rightOfTheMap ? mapDimX : 0, 0,
+                0, labelPosition == LabelPosition.RIGHT_OF_THE_MAP ? mapDimX : 0, 0,
                 bandCount, resultDimX - mapDimX, mapDimY),
             labelReader.data
         );

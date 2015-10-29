@@ -41,7 +41,7 @@ public final class RotatingPlanePyramidSource
 {
     private static final boolean DEBUG_MODE = false;
 
-    public static enum RotationMode {
+    public enum RotationMode {
         NONE(1, 0, 0, 0, false, 0),
 
         CLOCKWISE_90(0, 1, 0, 1, true, 90),
