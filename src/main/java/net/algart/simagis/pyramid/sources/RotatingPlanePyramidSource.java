@@ -113,6 +113,10 @@ public final class RotatingPlanePyramidSource
             return LinearOperator.getInstance(a(), b(width, height));
         }
 
+        public boolean isSwitchWidthAndHeight() {
+            return switchWidthAndHeight;
+        }
+
         public long[] correctDimensions(long[] dimensionsToCorrect) {
             if (switchWidthAndHeight) {
                 dimensionsToCorrect = dimensionsToCorrect.clone();
@@ -121,6 +125,36 @@ public final class RotatingPlanePyramidSource
                 dimensionsToCorrect[1] = temp;
             }
             return dimensionsToCorrect;
+        }
+
+        public int[] correctDimensions(int[] dimensionsToCorrect) {
+            if (switchWidthAndHeight) {
+                dimensionsToCorrect = dimensionsToCorrect.clone();
+                int temp = dimensionsToCorrect[2];
+                dimensionsToCorrect[2] = dimensionsToCorrect[1];
+                dimensionsToCorrect[1] = temp;
+            }
+            return dimensionsToCorrect;
+        }
+
+        public long[] correctWidthAndHeight(long[] widthAndHeightToCorrect) {
+            if (switchWidthAndHeight) {
+                widthAndHeightToCorrect = widthAndHeightToCorrect.clone();
+                long temp = widthAndHeightToCorrect[1];
+                widthAndHeightToCorrect[1] = widthAndHeightToCorrect[0];
+                widthAndHeightToCorrect[0] = temp;
+            }
+            return widthAndHeightToCorrect;
+        }
+
+        public int[] correctWidthAndHeight(int[] widthAndHeightToCorrect) {
+            if (switchWidthAndHeight) {
+                widthAndHeightToCorrect = widthAndHeightToCorrect.clone();
+                int temp = widthAndHeightToCorrect[1];
+                widthAndHeightToCorrect[1] = widthAndHeightToCorrect[0];
+                widthAndHeightToCorrect[0] = temp;
+            }
+            return widthAndHeightToCorrect;
         }
 
         public long[] correctFromAndTo(
