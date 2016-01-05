@@ -76,8 +76,8 @@ public class PlanePyramidTools {
      * <tt>dimX</tt>&nbsp;x&nbsp;<tt>dimY</tt>,
      * with given compression between neighbour levels and with the last level less than
      * <tt>minimalPyramidSize</tt>&nbsp;x&nbsp;<tt>minimalPyramidSize</tt>.
-     * But the result is never less 1, even if the specified <tt>dimX</tt> and <tt>dimY</tt>
-     * already less than <tt>minimalPyramidSize</tt> (in this case 1 returned).
+     * But the result is never less than 1, even if the specified <tt>dimX</tt> and <tt>dimY</tt>
+     * are already less than <tt>minimalPyramidSize</tt> (in this case 1 returned).
      *
      * @param dimX               width of zero-level (largest) level.
      * @param dimY               height of zero-level (largest) level.
