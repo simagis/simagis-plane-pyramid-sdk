@@ -25,7 +25,6 @@
 package net.algart.simagis.pyramid;
 
 import net.algart.arrays.*;
-import net.algart.arrays.Arrays;
 import net.algart.external.MatrixToBufferedImageConverter;
 import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
@@ -33,12 +32,10 @@ import net.algart.math.Range;
 import net.algart.math.functions.LinearFunc;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class ScalablePlanePyramidSource implements PlanePyramidSource {
@@ -375,7 +372,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         }
         final String averageSpeed = pyramidSourceSpeedInfo.update(Matrices.sizeOf(m), t2 - t1);
         if (DEBUG_LEVEL >= 2) {
-            System.out.printf(Locale.US,
+            LOGGER.info(String.format(Locale.US,
                 "%s.callAndCheckParentReadSubMatrix timing (level %d, %d..%d x %d..%d (%d x %d%s): "
                     + "%.3f ms, %.3f MB/sec, average %s (source: %s)%n",
                 ScalablePlanePyramidSource.class.getSimpleName(),
@@ -383,7 +380,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 Arrays.isNCopies(m.array()) ? ", CONSTANT" : "",
                 (t2 - t1) * 1e-6, Matrices.sizeOf(m) / 1048576.0 / ((t2 - t1) * 1e-9), averageSpeed,
                 parent.getClass().getSimpleName()
-            );
+            ));
         }
         return m;
     }
