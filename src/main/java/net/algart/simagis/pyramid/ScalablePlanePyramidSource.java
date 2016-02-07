@@ -176,6 +176,9 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
     @Override
     public Matrix<? extends PArray> readFullMatrix(int resolutionLevel) {
+        if (!isFullMatrixSupported()) {
+            throw new UnsupportedOperationException("readFullMatrix method is not supported");
+        }
         //TODO!! own compression
         return parent.readFullMatrix(resolutionLevel);
     }
