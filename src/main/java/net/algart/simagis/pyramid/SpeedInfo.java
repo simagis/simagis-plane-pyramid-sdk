@@ -43,8 +43,8 @@ class SpeedInfo {
             elapsedTime += time;
             final long t = System.currentTimeMillis();
             if (enforceGc) {
-                doGc = ResizablePlanePyramid.TIME_ENFORCING_GC > 0
-                    && (t - lastGcTime) > ResizablePlanePyramid.TIME_ENFORCING_GC;
+                doGc = ScalablePlanePyramidSource.TIME_ENFORCING_GC > 0
+                    && (t - lastGcTime) > ScalablePlanePyramidSource.TIME_ENFORCING_GC;
                 if (doGc) {
                     lastGcTime = t;
                 }

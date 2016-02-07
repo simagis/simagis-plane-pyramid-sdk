@@ -293,10 +293,6 @@ public abstract class AbstractPlanePyramidSource
     public Matrix<? extends PArray> readFullMatrix(int resolutionLevel)
         throws NoSuchElementException, NotYetConnectedException, UnsupportedOperationException
     {
-        if (context() == null) {
-            throw new UnsupportedOperationException("readFullMatrix method must not be used " +
-                "when the context is not specified");
-        }
         final long[] dimensions = dimensions(resolutionLevel);
         return readSubMatrix(resolutionLevel, 0, 0, dimensions[1], dimensions[2]);
     }
