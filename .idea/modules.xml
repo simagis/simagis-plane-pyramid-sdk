@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/simagis-plane-pyramid-sdk.iml" filepath="$PROJECT_DIR$/simagis-plane-pyramid-sdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simagis-plane-pyramid.iml" filepath="$PROJECT_DIR$/simagis-plane-pyramid.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simagis-plane-pyramid-apps/simagis-plane-pyramid-apps.iml" filepath="$PROJECT_DIR$/simagis-plane-pyramid-apps/simagis-plane-pyramid-apps.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simagis-plane-pyramid-barcode/simagis-plane-pyramid-barcode.iml" filepath="$PROJECT_DIR$/simagis-plane-pyramid-barcode/simagis-plane-pyramid-barcode.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simagis-plane-pyramid-sdk/simagis-plane-pyramid-sdk.iml" filepath="$PROJECT_DIR$/simagis-plane-pyramid-sdk/simagis-plane-pyramid-sdk.iml" />
     </modules>
   </component>
 </project>
-

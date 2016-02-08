@@ -5,8 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.algart.simagis</groupId>
-    <artifactId>simagis-plane-pyramid-sdk</artifactId>
+    <artifactId>simagis-plane-pyramid</artifactId>
+    <packaging>pom</packaging>
     <version>1.2.12</version>
+    <modules>
+        <module>simagis-plane-pyramid-sdk</module>
+        <module>simagis-plane-pyramid-apps</module>
+        <module>simagis-plane-pyramid-barcode</module>
+    </modules>
 
     <name>Simagis Live Plane Pyramid SDK</name>
     <description>Open-source mini-SDK for implementing plane pyramid for Simagis Live project.</description>
@@ -32,29 +38,6 @@
         <url>https://github.com/simagis/simagis-plane-pyramid-sdk.git</url>
     </scm>
 
-    <dependencies>
-        <dependency>
-            <groupId>net.algart</groupId>
-            <artifactId>algart</artifactId>
-            <version>1.2.7</version>
-        </dependency>
-        <dependency>
-            <groupId>net.simagis.ext</groupId>
-            <artifactId>json</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>core</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>javase</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-    </dependencies>
-
     <repositories>
         <repository>
             <id>simagis-open-releases</id>
@@ -73,8 +56,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.5.1</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>

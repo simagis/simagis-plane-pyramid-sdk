@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>simagis-plane-pyramid</artifactId>
+        <groupId>net.algart.simagis</groupId>
+        <version>1.2.12</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>simagis-plane-pyramid-apps</artifactId>
+
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>http://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.algart.simagis</groupId>
+            <artifactId>simagis-plane-pyramid-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.algart</groupId>
+            <artifactId>algart</artifactId>
+            <version>1.2.7</version>
+        </dependency>
+        <dependency>
+            <groupId>net.simagis.ext</groupId>
+            <artifactId>json</artifactId>
+            <version>0.1</version>
+        </dependency>
+    </dependencies>
+
+</project>
