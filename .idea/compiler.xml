@@ -45,8 +45,8 @@
     <bytecodeTargetLevel target="1.8">
       <module name="simagis-plane-pyramid" target="1.8" />
       <module name="simagis-plane-pyramid-barcode" target="1.8" />
-      <module name="simagis-plane-pyramid-common" target="" />
-      <module name="simagis-plane-pyramid-executable" target="1.8" />
+      <module name="simagis-plane-pyramid-common" target="1.8" />
+      <module name="simagis-plane-pyramid-executable" target="1.6" />
       <module name="simagis-plane-pyramid-sdk" target="1.8" />
     </bytecodeTargetLevel>
   </component>
