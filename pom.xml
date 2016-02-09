@@ -12,6 +12,7 @@
         <module>simagis-plane-pyramid-sdk</module>
         <module>simagis-plane-pyramid-common</module>
         <module>simagis-plane-pyramid-barcode</module>
+        <module>simagis-plane-pyramid-executable</module>
     </modules>
 
     <name>Simagis Live Plane Pyramid SDK</name>

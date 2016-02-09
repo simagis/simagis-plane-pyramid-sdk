@@ -1,2 +1,6 @@
 /.idea/workspace.xml
 /target
+/simagis-plane-pyramid-common/target
+/simagis-plane-pyramid-executable/target
+/simagis-plane-pyramid-sdk/target
+/simagis-plane-pyramid-barcode/target
