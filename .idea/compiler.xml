@@ -59,11 +59,18 @@
         <processorPath useClasspath="true" />
         <module name="simagis-plane-pyramid-sdk" />
       </profile>
+      <profile default="false" name="Annotation profile for simagis-plane-pyramid-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="simagis-plane-pyramid-common" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
       <module name="simagis-plane-pyramid" target="1.8" />
-      <module name="simagis-plane-pyramid-apps" target="1.8" />
       <module name="simagis-plane-pyramid-barcode" target="1.8" />
+      <module name="simagis-plane-pyramid-common" target="1.8" />
       <module name="simagis-plane-pyramid-sdk" target="1.8" />
     </bytecodeTargetLevel>
   </component>
