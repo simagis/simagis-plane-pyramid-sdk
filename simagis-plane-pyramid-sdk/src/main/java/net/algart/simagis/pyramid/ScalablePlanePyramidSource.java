@@ -64,7 +64,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     private final SpeedInfo readImageSpeedInfo = new SpeedInfo();
     private final SpeedInfo readBufferedImageSpeedInfo = new SpeedInfo();
 
-    public ScalablePlanePyramidSource(final PlanePyramidSource parent, final int compression) {
+    public ScalablePlanePyramidSource(final PlanePyramidSource parent, int compression) {
         Objects.requireNonNull(parent, "Null parent source");
         this.memoryModel = findMemoryModel(parent);
         this.parent = parent;
@@ -78,7 +78,10 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         this.dimX = dimensions0[DIM_WIDTH];
         this.dimY = dimensions0[DIM_HEIGHT];
 
-        this.compression = compression == 0 ? parent.compression() : compression;
+        if (compression == 0) {
+            compression = parent.compression();
+        }
+        this.compression = compression;
         this.numberOfResolutions = compression == 0 ? parent.numberOfResolutions() :
             PlanePyramidTools.numberOfResolutions(dimX, dimY, this.compression, DEFAULT_MINIMAL_PYRAMID_SIZE);
         this.bandCount = parent.bandCount();

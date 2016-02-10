@@ -206,6 +206,10 @@ public final class ImageIOPlanePyramidSource extends AbstractPlanePyramidSourceW
     }
 
 
+    public ImageIOPlanePyramidSource(File imageFile) throws IOException {
+        this(null, null, imageFile, null, new ImageIOReadingBehaviour());
+    }
+
     public ImageIOPlanePyramidSource(
         Context context,
         File pyramidCacheDir,
