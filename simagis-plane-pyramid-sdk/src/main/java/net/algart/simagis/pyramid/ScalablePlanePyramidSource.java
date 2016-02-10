@@ -48,7 +48,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     private final MemoryModel memoryModel;
     private final PlanePyramidSource parent;
 
-    private final int numberOfResolutions;
+    private final int numberOfActualResolutions;
+    private final int numberOfVirtualResolutions;
     private final List<long[]> dimensions;
     private final long dimX;
     private final long dimY;
@@ -82,13 +83,14 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
             compression = parent.compression();
         }
         this.compression = compression;
-        this.numberOfResolutions = compression == 0 ? parent.numberOfResolutions() :
+        this.numberOfActualResolutions = parent.numberOfResolutions();
+        this.numberOfVirtualResolutions = compression == 0 ? this.numberOfActualResolutions :
             PlanePyramidTools.numberOfResolutions(dimX, dimY, this.compression, DEFAULT_MINIMAL_PYRAMID_SIZE);
         this.bandCount = parent.bandCount();
         long levelDimX = dimX;
         long levelDimY = dimY;
         this.dimensions = new ArrayList<long[]>();
-        for (int k = 0; k < numberOfResolutions; k++) {
+        for (int k = 0; k < numberOfVirtualResolutions; k++) {
             this.dimensions.add(new long[] {bandCount, levelDimX, levelDimY});
             levelDimX /= compression;
             levelDimY /= compression;
@@ -105,7 +107,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
     @Override
     public int numberOfResolutions() {
-        return numberOfResolutions;
+        return numberOfVirtualResolutions;
     }
 
     @Override
@@ -278,7 +280,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     {
         checkFromAndTo(fromX, fromY, toX, toY);
         long t1 = System.nanoTime();
-        final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
+        final int level = Math.min(maxLevel(compression), numberOfVirtualResolutions - 1);
         // - this call also checks that compression >= 1
         final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
         long t2 = System.nanoTime();
@@ -315,7 +317,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         Objects.requireNonNull(converter, "Null converter");
         checkFromAndTo(fromX, fromY, toX, toY);
         long t1 = System.nanoTime();
-        final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
+        final int level = Math.min(maxLevel(compression), numberOfVirtualResolutions - 1);
         // - this call also checks that compression >= 1
         final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
         long t2 = System.nanoTime();
@@ -351,7 +353,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
     public String toString() {
         return "ScalablePlanePyramid " + bandCount + "x" + dimX() + "x" + dimY()
-            + ", " + numberOfResolutions + " levels, compression " + compression
+            + ", " + numberOfVirtualResolutions + " levels, compression " + compression
             + ", based on " + parent;
     }
 
@@ -475,10 +477,6 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 newDimY = Math.min(newDimY, safeFloor(newDimY / additionalCompression));
                 // - "min" here is to be on the safe side
             }
-//        System.out.printf("Resizing %d..%d x %d..%d (level %d) into %dx%d, additional compression %.3f"
-//            + " (%.3f/X, %.3f/Y, " + (needAdditionalCompression ? "" : "not ") + "necessary)%n",
-//            levelFromX, levelToX - 1, levelFromY, levelToY - 1, level, newDimX, newDimY, additionalCompression,
-//            (double) (levelToX - levelFromX) / newDimX, (double) (levelToY - levelFromY) / newDimY);
             if (needAdditionalCompression) {
                 assert additionalCompression > 1.0;
                 final long intAdditionalCompression = Math.round(additionalCompression);
@@ -493,6 +491,16 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 }
             } else {
                 this.additionalCompressionIsInteger = false;
+            }
+            if (DEBUG_LEVEL >= 4) {
+                LOGGER.info(String.format(Locale.US,
+                    "Resizing %d..%d x %d..%d (level %d) into %dx%d, additional compression %.3f"
+                        + " (%.3f/X, %.3f/Y, %snecessary%s)%n",
+                    levelFromX, levelToX - 1, levelFromY, levelToY - 1, level, newDimX, newDimY,
+                    additionalCompression,
+                    (double) (levelToX - levelFromX) / newDimX, (double) (levelToY - levelFromY) / newDimY,
+                    needAdditionalCompression ? "" : "NOT ",
+                    additionalCompressionIsInteger ? " and is integer" : ""));
             }
         }
 
@@ -530,7 +538,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         String scaleImageTiming() {
             return String.format(Locale.US,
                 "%s.scaleImage timing: "
-                    + "%.3f ms = %.3f ms extracting data + %.3f compression",
+                    + "%.3f ms = %.3f extracting data + %.3f compression",
                 getClass().getSimpleName(),
                 (scaleImageExtractingTime + scaleImageCompressionTime) * 1e-6,
                 scaleImageExtractingTime * 1e-6,

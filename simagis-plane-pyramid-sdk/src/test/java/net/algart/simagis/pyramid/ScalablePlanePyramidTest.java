@@ -31,27 +31,48 @@ import net.algart.simagis.pyramid.sources.ImageIOPlanePyramidSource;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
+import java.util.Locale;
 
 public class ScalablePlanePyramidTest {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         if (args.length < 7) {
             System.out.println("Usage: " + ScalablePlanePyramidTest.class.getName()
                 + " result-image-file source-image-file fromX fromY toX toY compression [pyramidCompression]");
             return;
         }
+        final String planePyramidSourceClassName = System.getProperty("planePyramidSource");
+        final Class<?> planePyramidSourceClass = planePyramidSourceClassName == null ? null :
+            Class.forName(planePyramidSourceClassName);
+
         final File resultFile = new File(args[0]);
         final File sourceFile = new File(args[1]);
         final long fromX = Long.parseLong(args[2]);
         final long fromY = Long.parseLong(args[3]);
-        final long toX = Long.parseLong(args[4]);
-        final long toY = Long.parseLong(args[5]);
+        long toX = Long.parseLong(args[4]);
+        long toY = Long.parseLong(args[5]);
         final double compression = Double.parseDouble(args[6]);
         final int pyramidCompression = args.length > 7 ? Integer.parseInt(args[7]) : 0;
+        final PlanePyramidSource planePyramidSource =
+            planePyramidSourceClass == null ?
+                new ImageIOPlanePyramidSource(null, null, sourceFile,
+                    new ImageIOPlanePyramidSource.ImageIOReadingBehaviour().setAddAlphaWhenExist(true)) :
+                (PlanePyramidSource) planePyramidSourceClass.getConstructor(File.class).newInstance(sourceFile);
         final ScalablePlanePyramidSource pyramid = new ScalablePlanePyramidSource(
-            new ImageIOPlanePyramidSource(sourceFile), pyramidCompression);
-        final BufferedImage bufferedImage = pyramid.readBufferedImage(fromX, fromY, toX, toY, compression,
-            new MatrixToBufferedImageConverter.Packed3DToPackedRGB(true));
+            planePyramidSource, pyramidCompression);
+        if (toX == 0) {
+            toX = pyramid.dimX();
+        }
+        if (toY == 0) {
+            toY = pyramid.dimY();
+        }
+        System.out.printf(Locale.US, "Reading rectangle %d..%d x %d..%d, compression %.3f from %s%n",
+            fromX, toX, fromY, toY, compression, sourceFile);
+        pyramid.setAveragingMode(PlanePyramidSource.AveragingMode.SIMPLE);
+        BufferedImage bufferedImage = null;
+        for (int test = 0; test < 5; test++) {
+            bufferedImage = pyramid.readBufferedImage(fromX, fromY, toX, toY, compression,
+                new MatrixToBufferedImageConverter.Packed3DToPackedRGB(true));
+        }
         ImageIO.write(bufferedImage, ExternalAlgorithmCaller.getFileExtension(resultFile), resultFile);
     }
 }

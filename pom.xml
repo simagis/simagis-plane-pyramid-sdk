@@ -7,7 +7,7 @@
     <groupId>net.algart.simagis</groupId>
     <artifactId>simagis-plane-pyramid</artifactId>
     <packaging>pom</packaging>
-    <version>1.2.12</version>
+    <version>1.2.13</version>
     <modules>
         <module>simagis-plane-pyramid-sdk</module>
         <module>simagis-plane-pyramid-common</module>

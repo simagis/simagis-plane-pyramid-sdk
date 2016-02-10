@@ -5,7 +5,7 @@
     <parent>
         <artifactId>simagis-plane-pyramid</artifactId>
         <groupId>net.algart.simagis</groupId>
-        <version>1.2.12</version>
+        <version>1.2.13</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -28,6 +28,12 @@
             <groupId>net.simagis.ext</groupId>
             <artifactId>json</artifactId>
             <version>0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jai-imageio</groupId>
+            <artifactId>jai-imageio-core</artifactId>
+            <version>1.3.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
