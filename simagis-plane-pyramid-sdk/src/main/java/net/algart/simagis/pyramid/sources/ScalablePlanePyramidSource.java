@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.algart.simagis.pyramid;
+package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.*;
 import net.algart.external.MatrixToBufferedImageConverter;
@@ -30,6 +30,7 @@ import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
 import net.algart.math.Range;
 import net.algart.math.functions.LinearFunc;
+import net.algart.simagis.pyramid.PlanePyramidSource;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -48,8 +49,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     private final MemoryModel memoryModel;
     private final PlanePyramidSource parent;
 
-    private final int numberOfActualResolutions;
-    private final int numberOfVirtualResolutions;
+    private final int numberOfResolutions;
     private final List<long[]> dimensions;
     private final long dimX;
     private final long dimY;
@@ -65,7 +65,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     private final SpeedInfo readImageSpeedInfo = new SpeedInfo();
     private final SpeedInfo readBufferedImageSpeedInfo = new SpeedInfo();
 
-    public ScalablePlanePyramidSource(final PlanePyramidSource parent, int compression) {
+    private ScalablePlanePyramidSource(final PlanePyramidSource parent) {
         Objects.requireNonNull(parent, "Null parent source");
         this.memoryModel = findMemoryModel(parent);
         this.parent = parent;
@@ -75,39 +75,24 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                     + "but there is no level #" + level);
             }
         }
-        long[] dimensions0 = this.parent.dimensions(0);
-        this.dimX = dimensions0[DIM_WIDTH];
-        this.dimY = dimensions0[DIM_HEIGHT];
-
-        if (compression == 0) {
-            compression = parent.compression();
-        }
-        this.compression = compression;
-        this.numberOfActualResolutions = parent.numberOfResolutions();
-        this.numberOfVirtualResolutions = compression == 0 ? this.numberOfActualResolutions :
-            PlanePyramidTools.numberOfResolutions(dimX, dimY, this.compression, DEFAULT_MINIMAL_PYRAMID_SIZE);
+        this.compression = parent.compression();
+        this.numberOfResolutions = parent.numberOfResolutions();
         this.bandCount = parent.bandCount();
-        long levelDimX = dimX;
-        long levelDimY = dimY;
-        this.dimensions = new ArrayList<long[]>();
-        for (int k = 0; k < numberOfVirtualResolutions; k++) {
-            this.dimensions.add(new long[] {bandCount, levelDimX, levelDimY});
-            levelDimX /= compression;
-            levelDimY /= compression;
+        this.dimensions = new ArrayList<>();
+        for (int k = 0; k < numberOfResolutions; k++) {
+            this.dimensions.add(parent.dimensions(k));
         }
+        this.dimX = dimensions.get(0)[DIM_WIDTH];
+        this.dimY = dimensions.get(0)[DIM_HEIGHT];
     }
 
-    // context is useful for getting large matrices: it defines the memory model
-    public static ScalablePlanePyramidSource newInstance(
-        final PlanePyramidSource parent,
-        final int compression)
-    {
-        return new ScalablePlanePyramidSource(parent, compression);
+    public static ScalablePlanePyramidSource newInstance(final PlanePyramidSource parent) {
+        return new ScalablePlanePyramidSource(parent);
     }
 
     @Override
     public int numberOfResolutions() {
-        return numberOfVirtualResolutions;
+        return numberOfResolutions;
     }
 
     @Override
@@ -167,8 +152,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         final long fromX, final long fromY,
         final long toX, final long toY)
     {
-        //TODO!! own compression
-        throw new UnsupportedOperationException();
+        return callAndCheckParentReadSubMatrix(resolutionLevel, fromX, fromY, toX, toY);
     }
 
     @Override
@@ -181,7 +165,6 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         if (!isFullMatrixSupported()) {
             throw new UnsupportedOperationException("readFullMatrix method is not supported");
         }
-        //TODO!! own compression
         return parent.readFullMatrix(resolutionLevel);
     }
 
@@ -280,7 +263,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     {
         checkFromAndTo(fromX, fromY, toX, toY);
         long t1 = System.nanoTime();
-        final int level = Math.min(maxLevel(compression), numberOfVirtualResolutions - 1);
+        final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
         // - this call also checks that compression >= 1
         final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
         long t2 = System.nanoTime();
@@ -317,7 +300,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         Objects.requireNonNull(converter, "Null converter");
         checkFromAndTo(fromX, fromY, toX, toY);
         long t1 = System.nanoTime();
-        final int level = Math.min(maxLevel(compression), numberOfVirtualResolutions - 1);
+        final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
         // - this call also checks that compression >= 1
         final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
         long t2 = System.nanoTime();
@@ -326,6 +309,11 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         if (converter.byteArrayRequired() && m.elementType() != byte.class) {
             double max = m.array().maxPossibleValue(1.0);
             m = Matrices.asFuncMatrix(LinearFunc.getInstance(0.0, 255.0 / max), ByteArray.class, m);
+        }
+        if (m.size() == 0) {
+            m = m.subMatr(0, 0, 0, m.dim(0), Math.max(1, m.dim(1)), Math.max(1, m.dim(2)),
+                Matrix.ContinuationMode.ZERO_CONSTANT);
+            // BufferedImage cannot be empty
         }
         BufferedImage bufferedImage = converter.toBufferedImage(m);
         long t4 = System.nanoTime();
@@ -353,7 +341,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
     public String toString() {
         return "ScalablePlanePyramid " + bandCount + "x" + dimX() + "x" + dimY()
-            + ", " + numberOfVirtualResolutions + " levels, compression " + compression
+            + ", " + numberOfResolutions + " levels, compression " + compression
             + ", based on " + parent;
     }
 
@@ -573,6 +561,43 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 return (long) (result + 1.0);
             }
             return (long) result;
+        }
+    }
+
+    static class SpeedInfo {
+        double totalMemory = 0.0;
+        double elapsedTime = 0.0;
+        long lastGcTime = System.currentTimeMillis();
+
+        public String update(long memory, long time) {
+            return update(memory, time, false);
+        }
+
+        public String update(long memory, long time, boolean enforceGc) {
+            final String result;
+            boolean doGc = false;
+            synchronized (this) {
+                totalMemory += memory;
+                elapsedTime += time;
+                final long t = System.currentTimeMillis();
+                if (enforceGc) {
+                    doGc = TIME_ENFORCING_GC > 0
+                        && (t - lastGcTime) > TIME_ENFORCING_GC;
+                    if (doGc) {
+                        lastGcTime = t;
+                    }
+                }
+                result = String.format(Locale.US,
+                    "%.1f MB / %.3f sec = %.3f MB/sec%s",
+                    totalMemory / 1048576.0,
+                    elapsedTime * 1e-9,
+                    totalMemory / 1048576.0 / (elapsedTime * 1e-9),
+                    doGc ? " [GC enforced by " + this + "]" : "");
+            }
+            if (doGc) {
+                System.gc();
+            }
+            return result;
         }
     }
 }

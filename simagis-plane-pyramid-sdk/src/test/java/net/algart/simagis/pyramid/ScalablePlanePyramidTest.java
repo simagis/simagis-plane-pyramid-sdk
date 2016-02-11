@@ -24,9 +24,12 @@
 
 package net.algart.simagis.pyramid;
 
+import net.algart.arrays.Matrix;
+import net.algart.arrays.PArray;
 import net.algart.external.ExternalAlgorithmCaller;
 import net.algart.external.MatrixToBufferedImageConverter;
 import net.algart.simagis.pyramid.sources.ImageIOPlanePyramidSource;
+import net.algart.simagis.pyramid.sources.ScalablePlanePyramidSource;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -37,7 +40,7 @@ public class ScalablePlanePyramidTest {
     public static void main(String[] args) throws Exception {
         if (args.length < 7) {
             System.out.println("Usage: " + ScalablePlanePyramidTest.class.getName()
-                + " result-image-file source-image-file fromX fromY toX toY compression [pyramidCompression]");
+                + " result-image-file source-image-file fromX fromY toX toY compression");
             return;
         }
         final String planePyramidSourceClassName = System.getProperty("planePyramidSource");
@@ -51,14 +54,12 @@ public class ScalablePlanePyramidTest {
         long toX = Long.parseLong(args[4]);
         long toY = Long.parseLong(args[5]);
         final double compression = Double.parseDouble(args[6]);
-        final int pyramidCompression = args.length > 7 ? Integer.parseInt(args[7]) : 0;
         final PlanePyramidSource planePyramidSource =
             planePyramidSourceClass == null ?
                 new ImageIOPlanePyramidSource(null, null, sourceFile,
                     new ImageIOPlanePyramidSource.ImageIOReadingBehaviour().setAddAlphaWhenExist(true)) :
                 (PlanePyramidSource) planePyramidSourceClass.getConstructor(File.class).newInstance(sourceFile);
-        final ScalablePlanePyramidSource pyramid = new ScalablePlanePyramidSource(
-            planePyramidSource, pyramidCompression);
+        final ScalablePlanePyramidSource pyramid = ScalablePlanePyramidSource.newInstance(planePyramidSource);
         if (toX == 0) {
             toX = pyramid.dimX();
         }
@@ -70,6 +71,8 @@ public class ScalablePlanePyramidTest {
         pyramid.setAveragingMode(PlanePyramidSource.AveragingMode.SIMPLE);
         BufferedImage bufferedImage = null;
         for (int test = 0; test < 5; test++) {
+            final Matrix<? extends PArray> m = pyramid.readImage(fromX, fromY, toX, toY, compression);
+            System.out.printf("Matrix %dx%d loaded%n", m.dim(1), m.dim(2));
             bufferedImage = pyramid.readBufferedImage(fromX, fromY, toX, toY, compression,
                 new MatrixToBufferedImageConverter.Packed3DToPackedRGB(true));
         }
