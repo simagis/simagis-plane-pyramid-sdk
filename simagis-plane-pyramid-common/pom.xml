@@ -5,7 +5,7 @@
     <parent>
         <artifactId>simagis-plane-pyramid</artifactId>
         <groupId>net.algart.simagis</groupId>
-        <version>1.2.12</version>
+        <version>${currentVersion}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>net.algart.simagis</groupId>
             <artifactId>simagis-plane-pyramid-sdk</artifactId>
-            <version>${project.version}</version>
+            <version>${currentVersion}</version>
         </dependency>
         <dependency>
             <groupId>net.algart</groupId>
