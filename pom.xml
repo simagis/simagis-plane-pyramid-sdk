@@ -4,14 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <currentVersion>1.2.13</currentVersion>
-    </properties>
-
     <groupId>net.algart.simagis</groupId>
     <artifactId>simagis-plane-pyramid</artifactId>
     <packaging>pom</packaging>
-    <version>${currentVersion}</version>
+    <version>1.2.13</version>
     <modules>
         <module>simagis-plane-pyramid-sdk</module>
         <module>simagis-plane-pyramid-common</module>
