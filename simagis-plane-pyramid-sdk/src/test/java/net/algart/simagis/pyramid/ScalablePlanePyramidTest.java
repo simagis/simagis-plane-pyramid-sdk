@@ -71,9 +71,9 @@ public class ScalablePlanePyramidTest {
         pyramid.setAveragingMode(PlanePyramidSource.AveragingMode.SIMPLE);
         BufferedImage bufferedImage = null;
         for (int test = 0; test < 5; test++) {
-            final Matrix<? extends PArray> m = pyramid.readImage(fromX, fromY, toX, toY, compression);
+            final Matrix<? extends PArray> m = pyramid.readImage(compression, fromX, fromY, toX, toY);
             System.out.printf("Matrix %dx%d loaded%n", m.dim(1), m.dim(2));
-            bufferedImage = pyramid.readBufferedImage(fromX, fromY, toX, toY, compression,
+            bufferedImage = pyramid.readBufferedImage(compression, fromX, fromY, toX, toY,
                 new MatrixToBufferedImageConverter.Packed3DToPackedRGB(true));
         }
         ImageIO.write(bufferedImage, ExternalAlgorithmCaller.getFileExtension(resultFile), resultFile);

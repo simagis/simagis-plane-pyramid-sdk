@@ -257,9 +257,10 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     }
 
     public Matrix<? extends PArray> readImage(
-        final long fromX, final long fromY, final long toX, final long toY,
+        final double compression,
+        final long fromX, final long fromY, final long toX, final long toY
         // position at level 0
-        final double compression)
+        )
     {
         checkFromAndTo(fromX, fromY, toX, toY);
         long t1 = System.nanoTime();
@@ -292,9 +293,9 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     }
 
     public BufferedImage readBufferedImage(
+        final double compression,
         final long fromX, final long fromY, final long toX, final long toY,
         // position at level 0
-        final double compression,
         final MatrixToBufferedImageConverter converter)
     {
         Objects.requireNonNull(converter, "Null converter");
