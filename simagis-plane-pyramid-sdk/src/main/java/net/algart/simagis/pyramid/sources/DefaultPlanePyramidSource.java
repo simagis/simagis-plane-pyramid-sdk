@@ -41,6 +41,8 @@ public final class DefaultPlanePyramidSource extends AbstractPlanePyramidSource 
     private final Class<?> elementType;
     private final int bandCount;
 
+    volatile boolean continuationEnabled = true;
+
     public DefaultPlanePyramidSource(List<? extends Matrix<? extends PArray>> packedImagePyramid) {
         this(null, packedImagePyramid);
     }
@@ -79,6 +81,15 @@ public final class DefaultPlanePyramidSource extends AbstractPlanePyramidSource 
         this.packedImagePyramid = PlanePyramidTools.equalizePrecisionToTheBest(packedImagePyramid);
         this.elementType = this.packedImagePyramid.get(firstNonNullIndex).elementType();
         this.bandCount = bandCount;
+    }
+
+    public boolean isContinuationEnabled() {
+        return continuationEnabled;
+    }
+
+    public DefaultPlanePyramidSource setContinuationEnabled(boolean continuationEnabled) {
+        this.continuationEnabled = continuationEnabled;
+        return this;
     }
 
     public int numberOfResolutions() {
@@ -123,7 +134,8 @@ public final class DefaultPlanePyramidSource extends AbstractPlanePyramidSource 
         if (m == null)
             throw new NoSuchElementException("Resolution level #" + resolutionLevel + " is absent");
         return m.subMatrix(
-            0, fromX, fromY, bandCount(), toX, toY, Matrix.ContinuationMode.NAN_CONSTANT);
+            0, fromX, fromY, bandCount(), toX, toY,
+            continuationEnabled ? Matrix.ContinuationMode.NAN_CONSTANT : Matrix.ContinuationMode.NONE);
     }
 
     public Matrix<? extends PArray> readFullMatrix(int resolutionLevel)

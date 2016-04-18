@@ -331,6 +331,15 @@ public final class ImageIOPlanePyramidSource extends AbstractPlanePyramidSourceW
         return parent;
     }
 
+    public boolean isContinuationEnabled() {
+        return parent.isContinuationEnabled();
+    }
+
+    public ImageIOPlanePyramidSource setContinuationEnabled(boolean continuationEnabled) {
+        parent.setContinuationEnabled(continuationEnabled);
+        return this;
+    }
+
     private static List<Matrix<? extends PArray>> openExistingPyramid(
         File pyramidDir)
         throws IOException

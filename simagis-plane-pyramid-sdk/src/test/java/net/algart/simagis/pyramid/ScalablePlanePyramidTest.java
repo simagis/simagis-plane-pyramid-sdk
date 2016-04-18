@@ -57,8 +57,11 @@ public class ScalablePlanePyramidTest {
         final PlanePyramidSource planePyramidSource =
             planePyramidSourceClass == null ?
                 new ImageIOPlanePyramidSource(null, null, sourceFile,
-                    new ImageIOPlanePyramidSource.ImageIOReadingBehaviour().setAddAlphaWhenExist(true)) :
+                    new ImageIOPlanePyramidSource.ImageIOReadingBehaviour()
+                        .setAddAlphaWhenExist(true))
+                    .setContinuationEnabled(false) :
                 (PlanePyramidSource) planePyramidSourceClass.getConstructor(File.class).newInstance(sourceFile);
+        // - disable continuation for better testing
         final ScalablePlanePyramidSource pyramid = ScalablePlanePyramidSource.newInstance(planePyramidSource);
         if (toX == 0) {
             toX = pyramid.dimX();
