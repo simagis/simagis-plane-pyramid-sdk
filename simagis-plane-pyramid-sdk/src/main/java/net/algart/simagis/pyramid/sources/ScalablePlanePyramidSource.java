@@ -25,6 +25,7 @@
 package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.*;
+import net.algart.arrays.Arrays;
 import net.algart.external.MatrixToBufferedImageConverter;
 import net.algart.math.IPoint;
 import net.algart.math.IRectangularArea;
@@ -32,11 +33,10 @@ import net.algart.math.Range;
 import net.algart.math.functions.LinearFunc;
 import net.algart.simagis.pyramid.PlanePyramidSource;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.logging.Logger;
 
 public class ScalablePlanePyramidSource implements PlanePyramidSource {
@@ -60,6 +60,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     // cache for elementType() method
 
     private volatile AveragingMode averagingMode = AveragingMode.DEFAULT;
+    private volatile Color backgroundColor = new Color(255, 255, 255, 0);
+    // transparent if possible, white in other case
 
     private final SpeedInfo pyramidSourceSpeedInfo = new SpeedInfo();
     private final SpeedInfo readImageSpeedInfo = new SpeedInfo();
@@ -152,7 +154,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         final long fromX, final long fromY,
         final long toX, final long toY)
     {
-        return callAndCheckParentReadSubMatrix(resolutionLevel, fromX, fromY, toX, toY);
+        return new SubMatrixExtracting(resolutionLevel, fromX, fromY, toX, toY).extractSubMatrix().fullData;
     }
 
     @Override
@@ -204,11 +206,24 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         return averagingMode;
     }
 
-    public void setAveragingMode(AveragingMode averagingMode) {
+    public ScalablePlanePyramidSource setAveragingMode(AveragingMode averagingMode) {
         if (averagingMode == null) {
-            throw new NullPointerException("Null averagingMode");
+            throw new NullPointerException("Null averaging mode");
         }
         this.averagingMode = averagingMode;
+        return this;
+    }
+
+    public Color getBackgroundColor() {
+        return backgroundColor;
+    }
+
+    public ScalablePlanePyramidSource setBackgroundColor(Color backgroundColor) {
+        if (backgroundColor == null) {
+            throw new NullPointerException("Null background color");
+        }
+        this.backgroundColor = backgroundColor;
+        return this;
     }
 
     // Recommended for viewers
@@ -217,7 +232,6 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
             averagingMode = AveragingMode.AVERAGING;
         }
     }
-
 
     public double compression(int level) {
         if (level < 0) {
@@ -258,19 +272,21 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
     public Matrix<? extends PArray> readImage(
         final double compression,
-        final long fromX, final long fromY, final long toX, final long toY
-        // position at level 0
-        )
+        final long zeroLevelFromX,
+        final long zeroLevelFromY,
+        final long zeroLevelToX,
+        final long zeroLevelToY)
     {
-        checkFromAndTo(fromX, fromY, toX, toY);
+        checkFromAndTo(zeroLevelFromX, zeroLevelFromY, zeroLevelToX, zeroLevelToY);
         long t1 = System.nanoTime();
         final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
         // - this call also checks that compression >= 1
-        final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
+        final ImageScaling scaling = new ImageScaling(
+            level, compression, zeroLevelFromX, zeroLevelFromY, zeroLevelToX, zeroLevelToY);
         long t2 = System.nanoTime();
-        Matrix<? extends PArray> m = scaling.scaleImage();
+        final Matrix<? extends PArray> result = scaling.scaleImage();
         long t3 = System.nanoTime();
-        final String averageSpeed = readImageSpeedInfo.update(Matrices.sizeOf(m), t3 - t1, true);
+        final String averageSpeed = readImageSpeedInfo.update(Matrices.sizeOf(result), t3 - t1, true);
         if (DEBUG_LEVEL >= 2) {
             Runtime runtime = Runtime.getRuntime();
             LOGGER.info(scaling.scaleImageTiming());
@@ -282,28 +298,32 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 Arrays.SystemSettings.isJava32() ? 32 : 64,
                 Arrays.SystemSettings.cpuCount(),
                 (runtime.totalMemory() - runtime.freeMemory()) / 1048576.0, runtime.maxMemory() / 1048576.0,
-                compression, fromX, toX, fromY, toY, toX - fromX, toY - fromY,
-                Arrays.isNCopies(m.array()) ? ", CONSTANT" : "",
+                compression, zeroLevelFromX, zeroLevelToX, zeroLevelFromY, zeroLevelToY,
+                zeroLevelToX - zeroLevelFromX, zeroLevelToY - zeroLevelFromY,
+                Arrays.isNCopies(result.array()) ? ", CONSTANT" : "",
                 (t3 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6,
-                Matrices.sizeOf(m) / 1048576.0 / ((t3 - t1) * 1e-9), averageSpeed,
+                Matrices.sizeOf(result) / 1048576.0 / ((t3 - t1) * 1e-9), averageSpeed,
                 parent.getClass().getSimpleName()
             ));
         }
-        return m;
+        return result;
     }
 
     public BufferedImage readBufferedImage(
         final double compression,
-        final long fromX, final long fromY, final long toX, final long toY,
-        // position at level 0
+        final long zeroLevelFromX,
+        final long zeroLevelFromY,
+        final long zeroLevelToX,
+        final long zeroLevelToY,
         final MatrixToBufferedImageConverter converter)
     {
         Objects.requireNonNull(converter, "Null converter");
-        checkFromAndTo(fromX, fromY, toX, toY);
+        checkFromAndTo(zeroLevelFromX, zeroLevelFromY, zeroLevelToX, zeroLevelToY);
         long t1 = System.nanoTime();
         final int level = Math.min(maxLevel(compression), numberOfResolutions - 1);
         // - this call also checks that compression >= 1
-        final ImageScaling scaling = new ImageScaling(fromX, fromY, toX, toY, level, compression);
+        final ImageScaling scaling = new ImageScaling(
+            level, compression, zeroLevelFromX, zeroLevelFromY, zeroLevelToX, zeroLevelToY);
         long t2 = System.nanoTime();
         Matrix<? extends PArray> m = scaling.scaleImage();
         long t3 = System.nanoTime();
@@ -316,7 +336,26 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 Matrix.ContinuationMode.ZERO_CONSTANT);
             // BufferedImage cannot be empty
         }
-        BufferedImage bufferedImage = converter.toBufferedImage(m);
+        final int width = converter.getWidth(m); // must be after conversion to byte, to avoid IllegalArgumentException
+        final int height = converter.getHeight(m);
+        final Collection<IRectangularArea> backgroundAreas =
+            getBackgroundAreasInRectangle(zeroLevelFromX, zeroLevelFromY, zeroLevelToX, zeroLevelToY);
+        java.awt.image.DataBuffer dataBuffer = converter.toDataBuffer(m);
+        if (!backgroundAreas.isEmpty()) {
+            final IPoint shift = IPoint.valueOf(-zeroLevelFromX, -zeroLevelFromY);
+            for (int bankIndex = 0; bankIndex < dataBuffer.getNumBanks(); bankIndex++) {
+                Matrix<? extends UpdatablePArray> bankMatrix = Matrices.matrix(
+                    (UpdatablePArray) SimpleMemoryModel.asUpdatableArray(
+                        MatrixToBufferedImageConverter.getDataArray(dataBuffer, bankIndex)),
+                    width, height);
+                long filler = converter.colorValue(m, backgroundColor, bankIndex);
+                for (IRectangularArea a : backgroundAreas) {
+                    fillBackgroundInMatrix2DWithCompression(bankMatrix, a, shift, compression, level == 0, filler);
+                }
+            }
+        }
+        final BufferedImage bufferedImage = converter.toBufferedImage(m, dataBuffer);
+
         long t4 = System.nanoTime();
         final String averageSpeed = readBufferedImageSpeedInfo.update(Matrices.sizeOf(m), t4 - t1, true);
         if (DEBUG_LEVEL >= 2) {
@@ -331,7 +370,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 Arrays.SystemSettings.isJava32() ? 32 : 64,
                 Arrays.SystemSettings.cpuCount(),
                 (runtime.totalMemory() - runtime.freeMemory()) / 1048576.0, runtime.maxMemory() / 1048576.0,
-                compression, fromX, toX, fromY, toY, toX - fromX, toY - fromY,
+                compression, zeroLevelFromX, zeroLevelToX, zeroLevelFromY, zeroLevelToY,
+                zeroLevelToX - zeroLevelFromX, zeroLevelToY - zeroLevelFromY,
                 (t4 - t1) * 1e-6, (t2 - t1) * 1e-6, (t3 - t2) * 1e-6, (t4 - t3) * 1e-6,
                 Matrices.sizeOf(m) / 1048576.0 / ((t4 - t1) * 1e-9), averageSpeed,
                 parent.getClass().getSimpleName()
@@ -391,6 +431,94 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         return result;
     }
 
+    private Collection<IRectangularArea> getBackgroundAreasInRectangle(
+        long zeroLevelFromX, long zeroLevelFromY, long zeroLevelToX, long zeroLevelToY)
+    {
+        List<IRectangularArea> result = new ArrayList<>();
+        if (zeroLevelToX <= zeroLevelFromX || zeroLevelToY <= zeroLevelFromY) {
+            return result;
+        }
+        final IRectangularArea area = IRectangularArea.valueOf(
+            IPoint.valueOf(zeroLevelFromX, zeroLevelFromY),
+            IPoint.valueOf(zeroLevelToX - 1, zeroLevelToY - 1));
+        final IRectangularArea allArea = IRectangularArea.valueOf(
+            IPoint.valueOf(0, 0),
+            IPoint.valueOf(dimX - 1, dimY - 1));
+        area.difference(result, allArea);
+        return result;
+    }
+
+    private void fillBackgroundInMatrix2DWithCompression(
+        Matrix<? extends UpdatablePArray> filledMatrix,
+        IRectangularArea filledArea,
+        IPoint shift,
+        double compression,
+        boolean compressionFromZeroLevel,
+        long filler)
+    {
+        if (filledMatrix == null) {
+            throw new NullPointerException("Null filled matrix");
+        }
+        if (filledArea == null) {
+            throw new NullPointerException("Null filled area");
+        }
+        if (shift == null) {
+            throw new NullPointerException("Null shift");
+        }
+        if (filledMatrix.dimCount() != 2) {
+            throw new IllegalArgumentException("The filled matrix must be 2-dimensional");
+        }
+        if (filledArea.coordCount() != 2) {
+            throw new IllegalArgumentException("The filled area must be 2-dimensional");
+        }
+        filledArea = filledArea.shift(shift);
+        final long c = (long) compression;
+        final boolean integerCompression = c == compression;
+        final boolean powerOfTwo = integerCompression && (c & (c - 1)) == 0
+            && (this.compression & (this.compression - 1)) == 0;
+        final double deltaFrom = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 1.000001;
+        final double deltaTo = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 2.000001;
+        final double shiftDeltaX = shift == null || (integerCompression && shift.coord(0) % c == 0) ? 0 : 1;
+        final double shiftDeltaY = shift == null || (integerCompression && shift.coord(1) % c == 0) ? 0 : 1;
+        // (End of delta calculation: for preprocessing)
+        // delta=0.0 when precise 2^k: in this case all calculations will be precise
+        // In other (rare) cases, it usually does not affect, but to be on the safe side
+        // we prefer to mistake with an extra background pixel instead of an incorrect edge.
+//        System.out.println("powerOfTwo = " + powerOfTwo + "; " +  filledArea.min(0) / compression + ", "
+//            + filledArea.min(1) / compression + ", "
+//            + filledArea.max(0) / compression + ", "
+//            + filledArea.max(1) / compression);
+        // After one compression in B times (POLYLINEAR_AVERAGING mode), the resulting pixel with coordinate X
+        // depends on original (interpolated) real pixels X'1<=X'<=X'2,
+        //     X'1 = X*B
+        //     X'2 = (X+1)*B - d (here d is a little positive number ~1/round(B))
+        // or, so, on integer pixels N1<=N<=N2,
+        //     N1 = floor(X'1) = floor(X*B)
+        //     N2 = ceil(X'2) = ceil((X+1)*B)
+        // On the other hand, background filledArea X'a..X'b (integer) affects to pixels X1<=X<=X2,
+        //     X1 = floor(X'a/B)
+        // (really, if X<=X1-1, then the corresponding X'2<(X+1)*B<=X1*B<=X'a, i.e. X'2 < X'a and N2 < X'a)
+        //     X2 = ceil((X'b+1)/B)-1
+        // (really, if X>=X2+1, then the corresponding X'1=X*B>=(X2+1)*B>=X'b+1, i.e. X'1 >= X'b+1 and N1 > X'b)
+
+        // But if !compressionFromZeroLevel, it means that this method is called for correction of double compression
+        // (scaling): first compression in A times to the pyramid layer (usually a power of "compression" field
+        // of this object) and second compression in B times from the nearest pyramid layer
+        // (usually <this.compression). In this case, the dependence filledArea (real) X'1<=X'<=X'2 is
+        //     X'1 = N1*A = floor(X*B)*A > (X*B-1)*A > (X-1)*AB
+        //     X'2 = (N2+1)*A = (ceil((X+1)*B)+1)*A < ((X+1)*B+2)*A < (X+3)*AB
+        // In other words, we need subtract 1 from X1 and add 2 to X2.
+        // In a case of power of two, no any gaps are necessary (special case)
+        final long fromX = (long) Math.floor(filledArea.min(0) / compression - deltaFrom - shiftDeltaX); // = X1
+        final long fromY = (long) Math.floor(filledArea.min(1) / compression - deltaFrom - shiftDeltaY); // = Y1
+        final long toX = (long) Math.ceil((filledArea.max(0) + 1) / compression + deltaTo + shiftDeltaX); // = X2+1
+        final long toY = (long) Math.ceil((filledArea.max(1) + 1) / compression + deltaTo + shiftDeltaY); // = Y2+1
+//        System.out.printf(Locale.US, "Drawing %d..%d x %d..%d, %.3f, %s%n",
+//            fromX, toX - 1, fromY, toY - 1, compression, filledArea);
+        //[[Repeat.IncludeEnd]]
+        filledMatrix.subMatrix(fromX, fromY, toX, toY, Matrix.ContinuationMode.NULL_CONSTANT).array().fill(filler);
+    }
+
     private static MemoryModel findMemoryModel(PlanePyramidSource parent) {
         ArrayContext arrayContext = parent instanceof ArrayProcessor ?
             ((ArrayProcessor) parent).context() :
@@ -429,12 +557,12 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         private long scaleImageCompressionTime = 0;
 
         ImageScaling(
+            final int level,
+            final double compression,
             final long zeroLevelFromX,
             final long zeroLevelFromY,
             final long zeroLevelToX,
-            final long zeroLevelToY,
-            final int level,
-            final double compression)
+            final long zeroLevelToY)
         {
             assert zeroLevelFromX <= zeroLevelToX;
             assert zeroLevelFromY <= zeroLevelToY;
@@ -495,7 +623,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
 
         Matrix<? extends PArray> scaleImage() {
             long t1 = System.nanoTime();
-            Matrix<? extends PArray> sourceData = callAndCheckParentReadSubMatrix(
+            Matrix<? extends PArray> sourceData = readSubMatrix(
                 level, levelFromX, levelFromY, levelToX, levelToY);
             long t2 = System.nanoTime();
             scaleImageExtractingTime = t2 - t1;
@@ -562,6 +690,85 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 return (long) (result + 1.0);
             }
             return (long) result;
+        }
+    }
+
+    // Simplified version in comparison with original PlanePyramid: compression of areas
+    // outside the image is not optimized
+    private class SubMatrixExtracting {
+        // The following fields are filled by the constructor:
+        final int level;
+        final long levelDimX;
+        final long levelDimY;
+        final long levelFromX;
+        final long levelFromY;
+        final long levelToX;
+        final long levelToY;
+        final long actualFromX;
+        final long actualFromY;
+        final long actualToX;
+        final long actualToY;
+        final boolean allDataActual;
+
+        // The following fields are filled by extractSubMatrix:
+        Matrix<? extends PArray> fullData = null;
+        Matrix<? extends PArray> actualData = null;
+
+        SubMatrixExtracting(
+            final int level,
+            final long levelFromX,
+            final long levelFromY,
+            final long levelToX,
+            final long levelToY)
+        {
+            if (levelFromX > levelToX) {
+                throw new IndexOutOfBoundsException("fromX = " + levelFromX + " > toX = " + levelToX);
+            }
+            if (levelFromY > levelToY) {
+                throw new IndexOutOfBoundsException("fromY = " + levelFromY + " > toY = " + levelToY);
+            }
+            if (levelFromX < -Long.MAX_VALUE / 4 || levelToX > Long.MAX_VALUE / 4 - compression) {
+                throw new IllegalArgumentException("Too large absolute values of fromX="
+                    + levelFromX + " or toX=" + levelToX);
+            }
+            if (levelFromY < -Long.MAX_VALUE / 4 || levelToY > Long.MAX_VALUE / 4 - compression) {
+                throw new IllegalArgumentException("Too large absolute values of fromX="
+                    + levelFromY + " or toX=" + levelToY);
+            }
+            // - little restriction for abnormally large values allows to guarantee, that there will be no overflows
+            this.level = level;
+            this.levelFromX = levelFromX;
+            this.levelFromY = levelFromY;
+            this.levelToX = levelToX;
+            this.levelToY = levelToY;
+            long[] dimensions = ScalablePlanePyramidSource.this.dimensions(level);
+            this.levelDimX = dimensions[DIM_WIDTH];
+            this.levelDimY = dimensions[DIM_HEIGHT];
+            this.actualFromX = levelFromX < 0 ? 0 : levelFromX > levelDimX ? levelDimX : levelFromX;
+            this.actualFromY = levelFromY < 0 ? 0 : levelFromY > levelDimY ? levelDimY : levelFromY;
+            this.actualToX = levelToX < 0 ? 0 : levelToX > levelDimX ? levelDimX : levelToX;
+            this.actualToY = levelToY < 0 ? 0 : levelToY > levelDimY ? levelDimY : levelToY;
+            this.allDataActual = actualFromX == levelFromX && actualFromY == levelFromY
+                && actualToX == levelToX && actualToY == levelToY;
+        }
+
+        SubMatrixExtracting extractSubMatrix() {
+            this.actualData = callAndCheckParentReadSubMatrix(level, actualFromX, actualFromY, actualToX, actualToY);
+            extendActual();
+            return this;
+        }
+
+        private void extendActual() {
+            assert actualData != null;
+            if (allDataActual) {
+                fullData = actualData;
+            } else {
+                // providing better behaviour than the parent source: allowing an area outside the matrix
+                fullData = actualData.subMatr(
+                    0, levelFromX - actualFromX, levelFromY - actualFromY,
+                    bandCount, levelToX - levelFromX, levelToY - levelFromY,
+                    Matrix.ContinuationMode.NAN_CONSTANT);
+            }
         }
     }
 

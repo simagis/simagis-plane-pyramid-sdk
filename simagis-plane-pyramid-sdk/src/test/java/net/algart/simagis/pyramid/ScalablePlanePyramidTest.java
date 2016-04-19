@@ -32,6 +32,7 @@ import net.algart.simagis.pyramid.sources.ImageIOPlanePyramidSource;
 import net.algart.simagis.pyramid.sources.ScalablePlanePyramidSource;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Locale;
@@ -63,6 +64,7 @@ public class ScalablePlanePyramidTest {
                 (PlanePyramidSource) planePyramidSourceClass.getConstructor(File.class).newInstance(sourceFile);
         // - disable continuation for better testing
         final ScalablePlanePyramidSource pyramid = ScalablePlanePyramidSource.newInstance(planePyramidSource);
+        pyramid.setBackgroundColor(new Color(0, 255, 128, 64));
         if (toX == 0) {
             toX = pyramid.dimX();
         }
