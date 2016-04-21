@@ -761,9 +761,11 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         private void extendActual() {
             assert actualData != null;
             if (allDataActual) {
+//                System.out.println("!!!actual");
                 fullData = actualData;
             } else {
                 // providing better behaviour than the parent source: allowing an area outside the matrix
+//                System.out.println("!!!extending");
                 fullData = actualData.subMatr(
                     0, levelFromX - actualFromX, levelFromY - actualFromY,
                     bandCount, levelToX - levelFromX, levelToY - levelFromY,
