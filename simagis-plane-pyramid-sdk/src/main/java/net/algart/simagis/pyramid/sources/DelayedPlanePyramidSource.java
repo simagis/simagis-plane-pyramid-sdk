@@ -190,6 +190,25 @@ public final class DelayedPlanePyramidSource
         return parent.elementType();
     }
 
+    @Override
+    public Double pixelSizeInMicrons() {
+        PlanePyramidSource parent = getParent();
+        if (parent == null) {
+            throw new UnsupportedOperationException("pixelSizeInMicrons() method is not supported yet, "
+                + "because the parent is not set yet");
+        }
+        return parent.pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        PlanePyramidSource parent = getParent();
+        if (parent == null) {
+            throw new UnsupportedOperationException("magnification() method is not supported yet, "
+                + "because the parent is not set yet");
+        }
+        return parent.magnification();
+    }
 
     public List<IRectangularArea> zeroLevelActualRectangles() {
         PlanePyramidSource parent = getParent();

@@ -300,6 +300,16 @@ public final class RotatingPlanePyramidSource
         return parent.elementType();
     }
 
+    @Override
+    public Double pixelSizeInMicrons() {
+        return parent.pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        return parent.magnification();
+    }
+
     public List<IRectangularArea> zeroLevelActualRectangles() {
         final List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
         if (parentRectangles == null) {

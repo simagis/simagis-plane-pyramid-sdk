@@ -182,10 +182,6 @@ public abstract class AbstractPlanePyramidSource
             + super.getClass()); // avoiding IDEA bug
     }
 
-    public List<IRectangularArea> zeroLevelActualRectangles() {
-        return null;
-    }
-
     @Override
     public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
         final List<IRectangularArea> rectangles = zeroLevelActualRectangles();
@@ -315,10 +311,6 @@ public abstract class AbstractPlanePyramidSource
 
     public boolean isDataReady() {
         return true;
-    }
-
-    public String additionalMetadata() {
-        return null;
     }
 
     /**

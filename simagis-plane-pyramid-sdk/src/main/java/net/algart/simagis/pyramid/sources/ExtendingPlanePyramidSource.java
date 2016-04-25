@@ -209,6 +209,16 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
     }
 
     @Override
+    public Double pixelSizeInMicrons() {
+        return parent.pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        return parent.magnification();
+    }
+
+    @Override
     public List<IRectangularArea> zeroLevelActualRectangles() {
         List<IRectangularArea> parentRectangles = parent.zeroLevelActualRectangles();
         if (parentRectangles == null) {
@@ -270,6 +280,11 @@ public final class ExtendingPlanePyramidSource extends AbstractPlanePyramidSourc
 
     public boolean isDataReady() {
         return parent.isDataReady();
+    }
+
+    @Override
+    public String additionalMetadata() {
+        return parent.additionalMetadata();
     }
 
     public void loadResources() {

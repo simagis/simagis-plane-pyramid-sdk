@@ -139,6 +139,16 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
     }
 
     @Override
+    public Double pixelSizeInMicrons() {
+        return parent.pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        return parent.magnification();
+    }
+
+    @Override
     public java.util.List<IRectangularArea> zeroLevelActualRectangles() {
         return parent.zeroLevelActualRectangles();
     }

@@ -126,6 +126,21 @@ public final class CombinedPlanePyramidSource
         return mainParent.isElementTypeSupported() ? mainParent.elementType() : overridingParent.elementType();
     }
 
+    @Override
+    public Double pixelSizeInMicrons() {
+        return existInOverriding(0) ?
+            overridingParent.pixelSizeInMicrons() :
+            mainParent.pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        return existInOverriding(0) ?
+            overridingParent.magnification() :
+            mainParent.magnification();
+    }
+
+    @Override
     public List<IRectangularArea> zeroLevelActualRectangles() {
         return existInOverriding(0) ?
             overridingParent.zeroLevelActualRectangles() :

@@ -68,6 +68,16 @@ public abstract class AbstractPlanePyramidSourceWrapper implements PlanePyramidS
         return parent().elementType();
     }
 
+    @Override
+    public Double pixelSizeInMicrons() {
+        return parent().pixelSizeInMicrons();
+    }
+
+    @Override
+    public Double magnification() {
+        return parent().magnification();
+    }
+
     public List<IRectangularArea> zeroLevelActualRectangles() {
         return parent().zeroLevelActualRectangles();
     }

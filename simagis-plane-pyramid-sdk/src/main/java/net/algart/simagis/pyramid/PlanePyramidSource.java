@@ -37,20 +37,20 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public interface PlanePyramidSource {
-    public static final int DIM_BAND = 0;
-    public static final int DIM_WIDTH = 1;
-    public static final int DIM_HEIGHT = 2;
+    int DIM_BAND = 0;
+    int DIM_WIDTH = 1;
+    int DIM_HEIGHT = 2;
 
-    public static final int DEFAULT_COMPRESSION = Math.max(2,
+    int DEFAULT_COMPRESSION = Math.max(2,
         Arrays.SystemSettings.getIntProperty("net.algart.simagis.pyramid.defaultPyramidCompression", 4));
-    public static final long DEFAULT_TILE_DIM = Math.max(16,
+    long DEFAULT_TILE_DIM = Math.max(16,
         Arrays.SystemSettings.getLongProperty("net.algart.simagis.pyramid.tile", 1024));
-    public static final int DEBUG_LEVEL = Math.max(
+    int DEBUG_LEVEL = Math.max(
         Arrays.SystemSettings.getIntProperty("net.algart.simagis.pyramid.debugLevel", 1),
         Arrays.SystemSettings.getIntEnv("NET_ALGART_SIMAGIS_PYRAMID_DEBUGLEVEL", 1));
-    public static final long DEFAULT_MINIMAL_PYRAMID_SIZE = 8;
+    long DEFAULT_MINIMAL_PYRAMID_SIZE = 8;
 
-    public static enum SpecialImageKind {
+    enum SpecialImageKind {
         /**
          * Coarse image of the full slide. Usually contains the {@link #LABEL_ONLY_IMAGE label} as a part.
          *
@@ -145,7 +145,7 @@ public interface PlanePyramidSource {
         INVALID
     }
 
-    public static enum FlushMethod {
+    enum FlushMethod {
         QUICK_WITH_POSSIBLE_LOSS_OF_DATA() {
             public boolean dataMustBeFlushed() {
                 return false;
@@ -181,7 +181,7 @@ public interface PlanePyramidSource {
         public abstract boolean forcePhysicalWriting();
     }
 
-    public static enum AveragingMode {
+    enum AveragingMode {
         /**
          * For binary data means simple, for other types means averaging.
          * Note that in a case of BIT_TO_BYTE the source data are already converted to bytes (if a pyramid
@@ -255,17 +255,17 @@ public interface PlanePyramidSource {
             };
     }
 
-    public int numberOfResolutions();
+    int numberOfResolutions();
 
     // Relation of sizes of the level #k and the level #k+1
-    public int compression();
+    int compression();
 
     // Usually 1, 3, 4; must be positive; works very quickly
-    public int bandCount();
+    int bandCount();
 
-    public boolean isResolutionLevelAvailable(int resolutionLevel);
+    boolean isResolutionLevelAvailable(int resolutionLevel);
 
-    public boolean[] getResolutionLevelsAvailability();
+    boolean[] getResolutionLevelsAvailability();
 
     /**
      * <p>Returns dimensions of any pyramid level. Number of elements in the result arrays is always 3:</p>
@@ -284,7 +284,7 @@ public interface PlanePyramidSource {
      *                                isResolutionLevelAvailable(resolutionLevel)}</tt>
      */
     //
-    public long[] dimensions(int resolutionLevel)
+    long[] dimensions(int resolutionLevel)
         throws NoSuchElementException;
 
     /**
@@ -295,9 +295,17 @@ public interface PlanePyramidSource {
      *
      * @return whether {@link #elementType()} is supported.
      */
-    public boolean isElementTypeSupported();
+    boolean isElementTypeSupported();
 
-    public Class<?> elementType() throws UnsupportedOperationException;
+    Class<?> elementType() throws UnsupportedOperationException;
+
+    default Double pixelSizeInMicrons() {
+        return null;
+    }
+
+    default Double magnification() {
+        return null;
+    }
 
     /**
      * <p>Returns a set of all areas, which are 2D rectangles, filled by actual data, at the zero level.
@@ -313,7 +321,9 @@ public interface PlanePyramidSource {
      * @return a list of all areas (2D rectangles), filled by actual data, at the level #0,
      * or <tt>null</tt> if it is not supported.
      */
-    public List<IRectangularArea> zeroLevelActualRectangles();
+    default List<IRectangularArea> zeroLevelActualRectangles() {
+        return null;
+    }
 
     /**
      * <p>Returns a set of all areas, filled by actual data, at the zero level, in a form of a list
@@ -342,17 +352,19 @@ public interface PlanePyramidSource {
      * @return the list of all polygonal areas, filled by actual data, at the level #0, and their
      * holes (if they exist), or <tt>null</tt> if this ability is not supported.
      */
-    public List<List<List<IPoint>>> zeroLevelActualAreaBoundaries();
+    default List<List<List<IPoint>>> zeroLevelActualAreaBoundaries() {
+        return null;
+    }
 
-    public Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
+    Matrix<? extends PArray> readSubMatrix(int resolutionLevel, long fromX, long fromY, long toX, long toY)
         throws NoSuchElementException, NotYetConnectedException;
     // throws if !isResolutionLevelAvailable(resolutionLevel), if !isDataReady()
 
-    public boolean isFullMatrixSupported();
+    boolean isFullMatrixSupported();
 
     // Works faster than equivalent readSubMatrix call if possible;
     // but may work very slowly in compressed implementations
-    public Matrix<? extends PArray> readFullMatrix(int resolutionLevel)
+    Matrix<? extends PArray> readFullMatrix(int resolutionLevel)
         throws NoSuchElementException, NotYetConnectedException, UnsupportedOperationException;
     // throws if !isResolutionLevelAvailable(resolutionLevel),
     // if !isDataReady(), if !isFullMatrixSupported()
@@ -364,10 +376,10 @@ public interface PlanePyramidSource {
      * @param kind the kind of special image.
      * @return whether this kind is supported; <tt>false</tt> by default.
      */
-    public boolean isSpecialMatrixSupported(SpecialImageKind kind);
+    boolean isSpecialMatrixSupported(SpecialImageKind kind);
 
     // If there is no appropriate image, equivalent to readFullMatrix(numberOfResolutions()-1)
-    public Matrix<? extends PArray> readSpecialMatrix(SpecialImageKind kind)
+    Matrix<? extends PArray> readSpecialMatrix(SpecialImageKind kind)
         throws NotYetConnectedException;
 
     /**
@@ -379,7 +391,7 @@ public interface PlanePyramidSource {
      *
      * @return whether the data at all available levels of this source are available.
      */
-    public boolean isDataReady();
+    boolean isDataReady();
 
     /**
      * Returns some additional information about this pyramid or <tt>null</tt> if it is not supported.
@@ -387,7 +399,9 @@ public interface PlanePyramidSource {
      *
      * @return additional information about the pyramid or <tt>null</tt>.
      */
-    public String additionalMetadata();
+    default String additionalMetadata() {
+        return null;
+    }
 
     /**
      * Reinitializes object and loads all necessary resources.
@@ -399,7 +413,7 @@ public interface PlanePyramidSource {
      * so, if it is not initialized, then all its clones will be also non-initialized
      * and will be reinitialized while every usage.
      */
-    public void loadResources();
+    void loadResources();
 
-    public void freeResources(FlushMethod flushMethod);
+    void freeResources(FlushMethod flushMethod);
 }
