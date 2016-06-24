@@ -490,8 +490,12 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
             && (this.compression & (this.compression - 1)) == 0;
         final double deltaFrom = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 1.000001;
         final double deltaTo = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 2.000001;
-        final double shiftDeltaX = !dataWasScaled || integerCompression && shift.coord(0) % c == 0 ? 0 : 1;
-        final double shiftDeltaY = !dataWasScaled || integerCompression && shift.coord(1) % c == 0 ? 0 : 1;
+//        final double shiftDeltaX = !dataWasScaled || integerCompression && shift.coord(0) % c == 0 ? 0 : 1;
+//        final double shiftDeltaY = !dataWasScaled || integerCompression && shift.coord(1) % c == 0 ? 0 : 1;
+//      - Obsolete solution, leading to "eating" boundary pixels, that is especially bad when the picture
+//      has borders. We prefer to mix the boundary pixels with WHITE background in this case.
+        final double shiftDeltaX = integerCompression ? 0 : 1;
+        final double shiftDeltaY = integerCompression ? 0 : 1;
         // (End of delta calculation: for preprocessing)
         // delta=0.0 when precise 2^k: in this case all calculations will be precise
         // In other (rare) cases, it usually does not affect, but to be on the safe side
@@ -781,7 +785,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 fullData = actualData.subMatr(
                     0, levelFromX - actualFromX, levelFromY - actualFromY,
                     bandCount, levelToX - levelFromX, levelToY - levelFromY,
-                    Matrix.ContinuationMode.NAN_CONSTANT);
+                    Matrix.ContinuationMode.getConstantMode(Arrays.maxPossibleValue(actualData.type(), 1.0)));
+                // - white color by default (maxPossibleValue) is better for most applications
             }
         }
     }
