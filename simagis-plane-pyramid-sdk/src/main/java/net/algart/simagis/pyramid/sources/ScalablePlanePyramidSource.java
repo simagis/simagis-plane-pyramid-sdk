@@ -360,7 +360,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                     width, height);
                 long filler = converter.colorValue(m, backgroundColor, bankIndex);
                 for (IRectangularArea a : backgroundAreas) {
-                    fillBackgroundInMatrix2DWithCompression(bankMatrix, a, shift, compression, level == 0, filler);
+                    fillBackgroundInMatrix2DWithCompression(
+                        bankMatrix, a, shift, compression, level == 0, scaling.needAdditionalCompression, filler);
                 }
             }
         }
@@ -464,6 +465,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         IPoint shift,
         double compression,
         boolean compressionFromZeroLevel,
+        boolean dataWasScaled,
         long filler)
     {
         if (filledMatrix == null) {
@@ -488,8 +490,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
             && (this.compression & (this.compression - 1)) == 0;
         final double deltaFrom = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 1.000001;
         final double deltaTo = powerOfTwo ? 0.0 : compressionFromZeroLevel ? 0.000001 : 2.000001;
-        final double shiftDeltaX = shift == null || (integerCompression && shift.coord(0) % c == 0) ? 0 : 1;
-        final double shiftDeltaY = shift == null || (integerCompression && shift.coord(1) % c == 0) ? 0 : 1;
+        final double shiftDeltaX = !dataWasScaled || integerCompression && shift.coord(0) % c == 0 ? 0 : 1;
+        final double shiftDeltaY = !dataWasScaled || integerCompression && shift.coord(1) % c == 0 ? 0 : 1;
         // (End of delta calculation: for preprocessing)
         // delta=0.0 when precise 2^k: in this case all calculations will be precise
         // In other (rare) cases, it usually does not affect, but to be on the safe side
