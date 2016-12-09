@@ -33,6 +33,9 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -90,7 +93,10 @@ public class BarCodeFinder {
             System.out.printf("Loading image from %s...%n", file);
             final BufferedImage image = ImageIO.read(file);
             if (image == null) {
-                throw new IIOException("Image cannot be read");
+                final String message = "Image cannot be read from " + file;
+                new IIOException(message).printStackTrace();
+                Files.write(Paths.get(file.getPath() + ".error"), message.getBytes(StandardCharsets.UTF_8));
+                continue;
             }
             System.out.printf("Recognizing bar code in %s...%n", file);
             long t1 = System.nanoTime();
@@ -99,6 +105,9 @@ public class BarCodeFinder {
             if (finder.isFound()) {
                 System.out.printf("BAR CODE FOUND (format %s): %s (%.3f ms)%n",
                     finder.getBarCodeFormat(), finder.getBarCodeText(), (t2 - t1) * 1e-6);
+                Files.write(Paths.get(file.getPath() + ".barcode"),
+                    String.format("BarCode: %s%nFormat: %s%n", finder.getBarCodeText(), finder.getBarCodeFormat())
+                        .getBytes(StandardCharsets.UTF_8));
                 successfullCount++;
             } else {
                 System.out.printf("Bar code not found! (%.3f ms)%n", (t2 - t1) * 1e-6);
