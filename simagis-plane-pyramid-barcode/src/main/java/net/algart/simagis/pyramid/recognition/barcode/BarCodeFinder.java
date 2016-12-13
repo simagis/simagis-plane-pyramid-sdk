@@ -26,20 +26,24 @@ package net.algart.simagis.pyramid.recognition.barcode;
 
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.HybridBinarizer;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 
 public class BarCodeFinder {
+    private final BinaryBitmap binary;
     private final Result result;
 
     public BarCodeFinder(BufferedImage image) {
@@ -47,8 +51,10 @@ public class BarCodeFinder {
     }
 
     public BarCodeFinder(BufferedImage image, Map<DecodeHintType, ?> hints) {
-        final BinaryBitmap binary = new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(image)));
+        this.binary = new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(image)));
         final MultiFormatReader barCodeReader = new MultiFormatReader();
+        barCodeReader.setHints(hints);
+
         Result result = null;
         try {
             result = barCodeReader.decode(binary, hints);
@@ -76,13 +82,19 @@ public class BarCodeFinder {
         return result.getBarcodeFormat();
     }
 
+    private static RescaleOp contrastOp(double scale) {
+        return new RescaleOp((float) scale, (float) (-128 * (scale - 1.0)), null);
+    }
+
     private static Map<DecodeHintType, ?> defaultHints() {
-        final Map<DecodeHintType, Object> hints = new HashMap<DecodeHintType, Object>();
+        final Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
         hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+        hints.put(DecodeHintType.POSSIBLE_FORMATS, EnumSet.allOf(BarcodeFormat.class));
+//        hints.put(DecodeHintType.PURE_BARCODE, Boolean.FALSE);
         return hints;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NotFoundException {
         if (args.length == 0) {
             System.out.printf("Usage: %s image1.png image2.png...%n", BarCodeFinder.class.getName());
             return;
@@ -99,9 +111,15 @@ public class BarCodeFinder {
                 continue;
             }
             System.out.printf("Recognizing bar code in %s...%n", file);
+            contrastOp(10).filter(image, image);
             long t1 = System.nanoTime();
             final BarCodeFinder finder = new BarCodeFinder(image);
             long t2 = System.nanoTime();
+
+            ImageIO.write(image, "bmp", new File(file.getPath() + ".contrasted.bmp"));
+//            ImageIO.write(MatrixToImageWriter.toBufferedImage(finder.binary.getBlackMatrix()), "bmp",
+//                new File(file.getPath() + ".binary.bmp"));
+
             if (finder.isFound()) {
                 System.out.printf("BAR CODE FOUND (format %s): %s (%.3f ms)%n",
                     finder.getBarCodeFormat(), finder.getBarCodeText(), (t2 - t1) * 1e-6);
