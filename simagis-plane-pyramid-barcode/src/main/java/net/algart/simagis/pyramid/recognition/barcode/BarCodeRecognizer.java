@@ -48,6 +48,12 @@ public class BarCodeRecognizer {
     private static final Logger LOGGER = Logger.getLogger(BarCodeRecognizer.class.getName());
     private static final double[] CONTRASTS_TO_TRY = {3.0, 10.0, 20.0};
 
+    private static final double STANDARD_WHOLE_SLIDE_ASPECT_RATIO = 2.8846153846153846153846153846154;
+    // - 75000/26000, typical value for medicine
+    private static final double ALLOWED_WHOLE_SLIDE_ASPECT_RATION_DEVIATION = 0.2;
+    private static final double ESTIMATED_LABEL_ASPECT_RATIO = 1.0;
+    // - must be not less than real ratio; some real ratios: 0.84, 0.86, 0.95, 0.91, 1.0, 0.56, 0.75, 0.90
+
     private final BufferedImage sourceImage;
     private final BinaryBitmap binary;
     private final Result result;
