@@ -76,32 +76,6 @@ public class BarCodeRecognizer {
         this.result = result;
     }
 
-    public static BarCodeRecognizer recognize(BufferedImage image) {
-        long t1 = System.nanoTime();
-        BarCodeRecognizer result = new BarCodeRecognizer(image);
-        double resultScale = 1.0;
-        if (!result.isFound()) {
-            final BufferedImage clone = cloneBufferedImage(image);
-            for (double scale : CONTRASTS_TO_TRY) {
-                resultScale = scale;
-                contrastOp(10).filter(image, clone);
-                result = new BarCodeRecognizer(clone);
-                if (result.isFound()) {
-                    break;
-                }
-            }
-        }
-        long t2 = System.nanoTime();
-        LOGGER.info(String.format(Locale.US, "Image processed in %.3f ms, bar code %s",
-            (t2 - t1) * 1e-6, result.isFound() ? "found" : "NOT FOUND"));
-        if (result.isFound()) {
-            LOGGER.info(String.format("BarCode: %s (format: %s)%s",
-                result.getBarCodeText(), result.getBarCodeFormat(),
-                resultScale == 1.0 ? "" : ", found after contrasting with scale " + resultScale));
-        }
-        return result;
-    }
-
     public boolean isFound() {
         return result != null;
     }
@@ -118,6 +92,61 @@ public class BarCodeRecognizer {
             throw new IllegalStateException("Bar code is not found");
         }
         return result.getBarcodeFormat();
+    }
+
+    public static BarCodeRecognizer recognize(BufferedImage image) {
+        final BufferedImage label = extractLabel(image);
+        BarCodeRecognizer result = recognizeLabel(label);
+        if (!result.isFound() && label != image) {
+            LOGGER.info("Recognizing bar code on label area failed; trying full slide...");
+            result = recognizeLabel(image);
+        }
+        return result;
+    }
+
+    // Returns the argument "image" if label was not extracted.
+    private static BarCodeRecognizer recognizeLabel(BufferedImage image) {
+        long t1 = System.nanoTime();
+        BarCodeRecognizer result = new BarCodeRecognizer(image);
+        double resultScale = 1.0;
+        if (!result.isFound()) {
+            final BufferedImage clone = cloneBufferedImage(image);
+            for (double scale : CONTRASTS_TO_TRY) {
+                resultScale = scale;
+                contrastOp(10).filter(image, clone);
+                result = new BarCodeRecognizer(clone);
+                if (result.isFound()) {
+                    break;
+                }
+            }
+        }
+        long t2 = System.nanoTime();
+        LOGGER.info(String.format(Locale.US, "Image %dx%d processed in %.3f ms, bar code %s",
+            image.getWidth(), image.getHeight(), (t2 - t1) * 1e-6, result.isFound() ? "found" : "NOT FOUND"));
+        if (result.isFound()) {
+            LOGGER.info(String.format("BarCode: %s (format: %s)%s",
+                result.getBarCodeText(), result.getBarCodeFormat(),
+                resultScale == 1.0 ? "" : ", found after contrasting with scale " + resultScale));
+        }
+        return result;
+    }
+
+    private static BufferedImage extractLabel(BufferedImage slide) {
+        final int width = slide.getWidth();
+        final int height = slide.getHeight();
+        final double ratio = (double) width / (double) height;
+        // We suppose that the slide is oriented correctly: horizontally with the label on the left side
+        if (ratio > STANDARD_WHOLE_SLIDE_ASPECT_RATIO * (1.0 - ALLOWED_WHOLE_SLIDE_ASPECT_RATION_DEVIATION)
+            && ratio < STANDARD_WHOLE_SLIDE_ASPECT_RATIO / (1.0 - ALLOWED_WHOLE_SLIDE_ASPECT_RATION_DEVIATION))
+        {
+            // probably it is a standard medical slide
+            LOGGER.info(String.format(Locale.US, "Image is a whole slide; extracting label...",
+                slide.getWidth(), slide.getHeight()));
+            int labelWidth = (int) Math.min(width, ESTIMATED_LABEL_ASPECT_RATIO * height);
+            return cloneBufferedImage(slide.getSubimage(0, 0, labelWidth, height));
+        } else {
+            return slide;
+        }
     }
 
     private static RescaleOp contrastOp(double scale) {
