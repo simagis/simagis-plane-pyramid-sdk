@@ -179,7 +179,7 @@ public class BarCodeRecognizer {
             System.out.printf("Usage: %s image1.png image2.png...%n", BarCodeRecognizer.class.getName());
             return;
         }
-        int successfullCount = 0;
+        int successfulCount = 0;
         for (String arg : args) {
             final File file = new File(arg);
             System.out.printf("Loading image from %s...%n", file);
@@ -202,10 +202,10 @@ public class BarCodeRecognizer {
                 Files.write(Paths.get(file.getPath() + ".barcode"),
                     String.format("BarCode: %s%nFormat: %s%n", finder.getBarCodeText(), finder.getBarCodeFormat())
                         .getBytes(StandardCharsets.UTF_8));
-                successfullCount++;
+                successfulCount++;
             }
             System.out.println();
         }
-        System.out.printf("%d successfull recognitions from %d%n", successfullCount, args.length);
+        System.out.printf("%d successfull recognitions from %d%n", successfulCount, args.length);
     }
 }
