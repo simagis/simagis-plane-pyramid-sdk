@@ -94,6 +94,10 @@ public class BarCodeRecognizer {
         return result.getBarcodeFormat();
     }
 
+    public String getBarCodeFormatName() {
+        return getBarCodeFormat().toString();
+    }
+
     public static BarCodeRecognizer recognize(BufferedImage image) {
         final BufferedImage label = extractLabel(image);
         BarCodeRecognizer result = recognizeLabel(label);
