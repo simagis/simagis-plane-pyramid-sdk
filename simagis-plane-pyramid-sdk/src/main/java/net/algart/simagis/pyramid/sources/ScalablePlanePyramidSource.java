@@ -299,8 +299,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         final String averageSpeed = readImageSpeedInfo.update(Matrices.sizeOf(result), t3 - t1, true);
         if (DEBUG_LEVEL >= 2) {
             Runtime runtime = Runtime.getRuntime();
-            LOGGER.info(scaling.scaleImageTiming());
-            LOGGER.info(String.format(Locale.US,
+            LOGGER.config(scaling.scaleImageTiming());
+            LOGGER.config(String.format(Locale.US,
                 "%s has read image (%d-bit, %d CPU for AlgART, used memory %.3f/%.3f MB, compression %.2f): "
                     + "%d..%d x %d..%d (%d x %d%s) in %.3f ms (%.3f init + %.3f scaled reading), "
                     + "%.3f MB/sec, average %s (source: %s)%n",
@@ -371,8 +371,8 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         final String averageSpeed = readBufferedImageSpeedInfo.update(Matrices.sizeOf(m), t4 - t1, true);
         if (DEBUG_LEVEL >= 2) {
             Runtime runtime = Runtime.getRuntime();
-            LOGGER.info(scaling.scaleImageTiming());
-            LOGGER.info(String.format(Locale.US,
+            LOGGER.config(scaling.scaleImageTiming());
+            LOGGER.config(String.format(Locale.US,
                 "%s has read buffered image (%d-bit, %d CPU for AlgART, used memory %.3f/%.3f MB, compression %.2f): "
                     + "%d..%d x %d..%d (%d x %d) in %.3f ms "
                     + "(%.3f init + %.3f scaled reading + %.3f conversion), "
@@ -417,7 +417,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         }
         final String averageSpeed = pyramidSourceSpeedInfo.update(Matrices.sizeOf(m), t2 - t1);
         if (DEBUG_LEVEL >= 2) {
-            LOGGER.info(String.format(Locale.US,
+            LOGGER.config(String.format(Locale.US,
                 "%s.callAndCheckParentReadSubMatrix timing (level %d, %d..%d x %d..%d (%d x %d%s): "
                     + "%.3f ms, %.3f MB/sec, average %s (source: %s)%n",
                 ScalablePlanePyramidSource.class.getSimpleName(),
@@ -626,7 +626,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 this.additionalCompressionIsInteger = false;
             }
             if (DEBUG_LEVEL >= 4) {
-                LOGGER.info(String.format(Locale.US,
+                LOGGER.config(String.format(Locale.US,
                     "Resizing %d..%d x %d..%d (level %d) into %dx%d, additional compression %.3f"
                         + " (%.3f/X, %.3f/Y, %snecessary%s)%n",
                     levelFromX, levelToX - 1, levelFromY, levelToY - 1, level, newDimX, newDimY,
