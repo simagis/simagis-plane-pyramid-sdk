@@ -65,6 +65,7 @@ public final class RotatingPlanePyramidSource
             boolean switchWidthAndHeight,
             int rotationInDegrees)
         {
+            assert bX == 0 || bX == 1 || bY == 0 || bY == 1;
             this.cos = cos;
             this.sin = sin;
             this.bX = bX;
@@ -157,18 +158,20 @@ public final class RotatingPlanePyramidSource
             return widthAndHeightToCorrect;
         }
 
+        // Note that parentImageWidth/parentImageHeight are in ROTATED coordinate system (parent source),
+        // if we consider from/to as arguments of readSubMatrix of the required virtual image (this source).
         public long[] correctFromAndTo(
-            long imageWidth, long imageHeight, long fromX, long fromY, long toX, long toY)
+            long parentImageWidth, long parentImageHeight, long fromX, long fromY, long toX, long toY)
         {
-            long rotatedFromX = cos * fromX + sin * fromY + bX(imageWidth);
-            long rotatedFromY = -sin * fromX + cos * fromY + bY(imageHeight);
-            long rotatedDimX = cos * (toX - fromX) + sin * (toY - fromY);
-            long rotatedDimY = -sin * (toX - fromX) + cos * (toY - fromY);
-//            System.out.printf("Rotated = %d,%d; %dx%d%n", rotatedFromX, rotatedFromY, rotatedDimX, rotatedDimY);
-            long newFromX = rotatedDimX >= 0 ? rotatedFromX : rotatedFromX + rotatedDimX + 1;
-            long newFromY = rotatedDimY >= 0 ? rotatedFromY : rotatedFromY + rotatedDimY + 1;
-            long newToX = newFromX + Math.abs(rotatedDimX);
-            long newToY = newFromY + Math.abs(rotatedDimY);
+            long rotatedFromX = cos * fromX + sin * fromY + bX(parentImageWidth);
+            long rotatedFromY = -sin * fromX + cos * fromY + bY(parentImageHeight);
+            long rotatedSizeX = cos * (toX - fromX) + sin * (toY - fromY);
+            long rotatedSizeY = -sin * (toX - fromX) + cos * (toY - fromY);
+//            System.out.printf("Rotated = %d,%d; %dx%d%n", rotatedFromX, rotatedFromY, rotatedSizeX, rotatedSizeY);
+            long newFromX = rotatedSizeX >= 0 ? rotatedFromX : rotatedFromX + rotatedSizeX + 1;
+            long newFromY = rotatedSizeY >= 0 ? rotatedFromY : rotatedFromY + rotatedSizeY + 1;
+            long newToX = newFromX + Math.abs(rotatedSizeX);
+            long newToY = newFromY + Math.abs(rotatedSizeY);
 //            System.out.printf("Result = %d,%d; %d,%d%n", newFromX, newFromY, newToX, newToY);
             return new long[] {newFromX, newFromY, newToX, newToY};
         }

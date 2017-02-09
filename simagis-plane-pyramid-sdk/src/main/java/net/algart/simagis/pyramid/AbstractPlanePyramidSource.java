@@ -608,6 +608,7 @@ public abstract class AbstractPlanePyramidSource
                 + " or fromY..toY=" + fromY + ".." + toY + ": must be in ranges 0.."
                 + dimX + ", 0.." + dimY + ", fromX<=toX, fromY<=toY");
         }
+        // Be careful: fromX == toX == dimX are NOT incorrect arguments, as any situation fromx < toX == dimX
         if (require31BitSize) {
             if (toX - fromX > Integer.MAX_VALUE || toY - fromY > Integer.MAX_VALUE ||
                 (toX - fromX) * (toY - fromY) >= Integer.MAX_VALUE / bandCount)
