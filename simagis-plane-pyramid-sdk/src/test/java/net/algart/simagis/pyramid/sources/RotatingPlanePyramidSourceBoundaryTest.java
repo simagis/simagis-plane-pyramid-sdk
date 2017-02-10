@@ -26,6 +26,7 @@ package net.algart.simagis.pyramid.sources;
 
 import net.algart.arrays.Arrays;
 import net.algart.arrays.TooLargeArrayException;
+import net.algart.math.IPoint;
 
 import java.util.Random;
 
@@ -37,7 +38,7 @@ public class RotatingPlanePyramidSourceBoundaryTest {
         }
         final int dimX = Integer.parseInt(args[0]);
         final int dimY = Integer.parseInt(args[1]);
-        final int numberOfTests = 1000000;
+        final int numberOfTests = 10000000;
         System.out.printf("Testing random areas in %d x %d%n", dimX, dimY);
         Random rnd = new Random(157);
         for (RotatingPlanePyramidSource.RotationMode mode : RotatingPlanePyramidSource.RotationMode.values()) {
@@ -72,11 +73,20 @@ public class RotatingPlanePyramidSourceBoundaryTest {
                 }
                 final long newDimX = rotatedDim[1];
                 final long newDimY = rotatedDim[2];
-                final long[] fromAndTo = mode.correctFromAndTo(newDimX, newDimY, fromX, fromY, toX, toY);
-                final long newFromX = fromAndTo[0];
-                final long newFromY = fromAndTo[1];
-                final long newToX = fromAndTo[2];
-                final long newToY = fromAndTo[3];
+                final IPoint newFrom = mode.correctPoint(newDimX, newDimY, IPoint.valueOf(fromX, fromY));
+                if (newFrom.x() < 0 || newFrom.y() < 0 || newFrom.x() > newDimX || newFrom.y() > newDimY)
+                {
+                    mode.correctPoint(newDimX, newDimY, IPoint.valueOf(fromX, fromY)); // - for debugging
+                    throw new AssertionError("Illegal rotated point " + newFrom
+                        + ": must be in ranges 0.." + newDimX + ", 0.." + newDimY + "; "
+                        + "source point " + IPoint.valueOf(fromX, fromY));
+                }
+
+                final long[] newFromAndTo = mode.correctFromAndTo(newDimX, newDimY, fromX, fromY, toX, toY);
+                final long newFromX = newFromAndTo[0];
+                final long newFromY = newFromAndTo[1];
+                final long newToX = newFromAndTo[2];
+                final long newToY = newFromAndTo[3];
                 if (Arrays.longMul(rotatedDim) == Long.MIN_VALUE) {
                     throw new TooLargeArrayException("Product of all dimensions >Long.MAX_VALUE");
                 }
@@ -84,7 +94,7 @@ public class RotatingPlanePyramidSourceBoundaryTest {
                     || newFromX > newToX || newFromY > newToY || newToX > newDimX || newToY > newDimY)
                 {
                     mode.correctFromAndTo(newDimX, newDimY, fromX, fromY, toX, toY); // - for debugging
-                    throw new AssertionError("Illegal fromX..toX=" + newFromX + ".." + newToX
+                    throw new AssertionError("Illegal rotated fromX..toX=" + newFromX + ".." + newToX
                         + " or fromY..toY=" + newFromY + ".." + newToY + ": must be in ranges 0.."
                         + newDimX + ", 0.." + newDimY + ", fromX<=toX, fromY<=toY; "
                         + "source rectangle " + fromX + ".." + toX + " x " + fromY + ".." + toY);

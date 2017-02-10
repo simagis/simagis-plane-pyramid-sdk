@@ -163,13 +163,14 @@ public final class RotatingPlanePyramidSource
         public long[] correctFromAndTo(
             long parentImageWidth, long parentImageHeight, long fromX, long fromY, long toX, long toY)
         {
-            long rotatedFromX = cos * fromX + sin * fromY + bX(parentImageWidth);
-            long rotatedFromY = -sin * fromX + cos * fromY + bY(parentImageHeight);
+            // We recommend to understand the following algorithm in floating-point coordinates, it will be more clear
+            long rotatedFromX = cos * fromX + sin * fromY + bX * parentImageWidth;
+            long rotatedFromY = -sin * fromX + cos * fromY + bY * parentImageHeight;
             long rotatedSizeX = cos * (toX - fromX) + sin * (toY - fromY);
             long rotatedSizeY = -sin * (toX - fromX) + cos * (toY - fromY);
 //            System.out.printf("Rotated = %d,%d; %dx%d%n", rotatedFromX, rotatedFromY, rotatedSizeX, rotatedSizeY);
-            long newFromX = rotatedSizeX >= 0 ? rotatedFromX : rotatedFromX + rotatedSizeX + 1;
-            long newFromY = rotatedSizeY >= 0 ? rotatedFromY : rotatedFromY + rotatedSizeY + 1;
+            long newFromX = rotatedSizeX >= 0 ? rotatedFromX : rotatedFromX + rotatedSizeX;
+            long newFromY = rotatedSizeY >= 0 ? rotatedFromY : rotatedFromY + rotatedSizeY;
             long newToX = newFromX + Math.abs(rotatedSizeX);
             long newToY = newFromY + Math.abs(rotatedSizeY);
 //            System.out.printf("Result = %d,%d; %d,%d%n", newFromX, newFromY, newToX, newToY);
@@ -177,19 +178,21 @@ public final class RotatingPlanePyramidSource
         }
 
         public IPoint correctPoint(
-            long imageWidth, long imageHeight, IPoint point)
+            long parentImageWidth, long parentImageHeight, IPoint point)
         {
-            long rotatedX = cos * point.x() + sin * point.y() + bX(imageWidth);
-            long rotatedY = -sin * point.x() + cos * point.y() + bY(imageHeight);
+            long rotatedX = cos * point.x() + sin * point.y() + bX * parentImageWidth;
+            long rotatedY = -sin * point.x() + cos * point.y() + bY * parentImageHeight;
             return IPoint.valueOf(rotatedX, rotatedY);
         }
 
-        public IRectangularArea correctRectangle(long imageWidth, long imageHeight, IRectangularArea rectangle) {
+        public IRectangularArea correctRectangle(
+            long parentImageWidth, long parentImageHeight, IRectangularArea rectangle)
+        {
             long fromX = rectangle.min(0);
             long fromY = rectangle.min(1);
             long toX = rectangle.max(0) + 1;
             long toY = rectangle.max(1) + 1;
-            long[] fromAndTo = correctFromAndTo(imageWidth, imageHeight, fromX, fromY, toX, toY);
+            long[] fromAndTo = correctFromAndTo(parentImageWidth, parentImageHeight, fromX, fromY, toX, toY);
             return IRectangularArea.valueOf(
                 IPoint.valueOf(fromAndTo[0], fromAndTo[1]),
                 IPoint.valueOf(fromAndTo[2] - 1, fromAndTo[3] - 1));
@@ -220,17 +223,9 @@ public final class RotatingPlanePyramidSource
         private double[] b(long width, long height) {
             return new double[] {
                 0.0,
-                bX(width),
-                bY(height),
+                bX * (width - 1),
+                bY * (height - 1)
             };
-        }
-
-        private long bX(long width) {
-            return bX * (width - 1);
-        }
-
-        private long bY(long height) {
-            return bY * (height - 1);
         }
     }
 
