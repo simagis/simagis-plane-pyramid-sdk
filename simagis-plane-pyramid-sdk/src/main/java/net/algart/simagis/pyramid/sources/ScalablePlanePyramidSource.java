@@ -376,7 +376,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 "%s has read buffered image (%d-bit, %d CPU for AlgART, used memory %.3f/%.3f MB, compression %.2f): "
                     + "%d..%d x %d..%d (%d x %d) in %.3f ms "
                     + "(%.3f init + %.3f scaled reading + %.3f conversion), "
-                    + "%.3f MB/sec, average %s (source: %s)%n",
+                    + "%.3f MB/sec, average %s (source: %s)",
                 ScalablePlanePyramidSource.class.getSimpleName(),
                 Arrays.SystemSettings.isJava32() ? 32 : 64,
                 Arrays.SystemSettings.cpuCount(),
@@ -419,7 +419,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
         if (DEBUG_LEVEL >= 2) {
             LOGGER.config(String.format(Locale.US,
                 "%s.callAndCheckParentReadSubMatrix timing (level %d, %d..%d x %d..%d (%d x %d%s): "
-                    + "%.3f ms, %.3f MB/sec, average %s (source: %s)%n",
+                    + "%.3f ms, %.3f MB/sec, average %s (source: %s)",
                 ScalablePlanePyramidSource.class.getSimpleName(),
                 resolutionLevel, fromX, toX, fromY, toY, toX - fromX, toY - fromY,
                 Arrays.isNCopies(m.array()) ? ", CONSTANT" : "",
@@ -628,7 +628,7 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
             if (DEBUG_LEVEL >= 4) {
                 LOGGER.config(String.format(Locale.US,
                     "Resizing %d..%d x %d..%d (level %d) into %dx%d, additional compression %.3f"
-                        + " (%.3f/X, %.3f/Y, %snecessary%s)%n",
+                        + " (%.3f/X, %.3f/Y, %snecessary%s)",
                     levelFromX, levelToX - 1, levelFromY, levelToY - 1, level, newDimX, newDimY,
                     additionalCompression,
                     (double) (levelToX - levelFromX) / newDimX, (double) (levelToY - levelFromY) / newDimY,
@@ -678,9 +678,9 @@ public class ScalablePlanePyramidSource implements PlanePyramidSource {
                 scaleImageCompressionTime * 1e-6
             ) + (
                 needAdditionalCompression ?
-                    String.format(Locale.US, " (additional compressing %dx%d to %dx%d in %.3f times)%n",
+                    String.format(Locale.US, " (additional compressing %dx%d to %dx%d in %.3f times)",
                         levelToX - levelFromX, levelToY - levelFromY, newDimX, newDimY, additionalCompression) :
-                    String.format(" (additional compression skipped)%n"));
+                    String.format(" (additional compression skipped)"));
         }
 
         private void doResize(
