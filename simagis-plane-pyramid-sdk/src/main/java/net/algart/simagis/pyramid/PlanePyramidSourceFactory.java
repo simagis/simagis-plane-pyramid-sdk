@@ -67,18 +67,4 @@ public interface PlanePyramidSourceFactory {
         String pyramidConfiguration,
         String renderingConfiguration)
         throws IOException;
-
-    /**
-     * Returns the list of files, folders or other resources, containing the pyramid data, if the "main"
-     * file pyramid file is located at <tt>pyramidPath</tt>.
-     * For single-file formats, returns an empty list (default behaviour).
-     * For many formats, returns one folder with the same name without extension or something similar.
-     *
-     * @param pyramidPath some file or other resource, indicating the pyramid; it is passed as the first
-     *                    argument in {@link #newPlanePyramidSource(String, String, String)} method.
-     * @return the list of additional files, folders or other resources, containing the data of this pyramid.
-     */
-    default List<String> accompanyingResources(String pyramidPath) {
-        return Collections.emptyList();
-    }
 }
